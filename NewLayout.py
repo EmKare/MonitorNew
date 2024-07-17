@@ -128,7 +128,7 @@ class App(Tk):
 class EditWindow(Frame):
     def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
-        self.config(bg="lightgreen")
+        self.config(bg="lightblue")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross = int(self.__window_bredth / 2)
 
@@ -579,7 +579,7 @@ class ViewWindow(Frame):
         if not self.quadViewButton_bool:
             self.quadViewButton.config(state = "disabled")
         #----------------------------------------------------------------------------------------------------------------
-        self.show_frame(DoubleView)
+        self.show_frame(SingleView)
     
     def show_frame(self, anotherClass):
         frame = self.listOfViewFrames[anotherClass]
@@ -624,30 +624,41 @@ class AddFeed(Frame):
             self.listOfViewFrames[classes] = theframe
             theframe.grid(row = 0, column = 0, sticky = "nsew")
         
-        self.tab_1 = Button(self.tabs, text = "Add Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, border = 1, command = lambda: self.show_frame(addFeed))
+        self.tab_1 = Button(self.tabs, text = "Add Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, command = lambda: self.show_frame(addFeed,1))
         self.tab_1.place(x = 0, y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 1)
         
-        self.tab_2 = Button(self.tabs, text = "Edit Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, border = 1, command = lambda: self.show_frame(editFeed))
+        self.tab_2 = Button(self.tabs, text = "Edit Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, command = lambda: self.show_frame(editFeed,2))
         self.tab_2.place(x = int(self.tabs.winfo_reqwidth() / 3), y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 1)
         
-        self.tab_3 = Button(self.tabs, text = "Delete Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, border = 1, command = lambda: self.show_frame(deleteFeed))
-        self.tab_3.place(x = int(self.tabs.winfo_reqwidth() / 3) * 2, y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 2)
+        self.tab_3 = Button(self.tabs, text = "Delete Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0,  command = lambda: self.show_frame(deleteFeed,3))
+        self.tab_3.place(x = int(self.tabs.winfo_reqwidth() / 3) * 2, y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 1)
         
-        self.show_frame(addFeed)        
+        self.show_frame(addFeed,1)        
     
-    def show_frame(self, anotherClass):
+    def show_frame(self, anotherClass, whichButtonToLower):
         frame = self.listOfViewFrames[anotherClass]
         frame.tkraise()
-        
-        
+        if whichButtonToLower == 1:
+            self.tab_1.config(border=0)
+            self.tab_2.config(border=2)
+            self.tab_3.config(border=2)
+        elif whichButtonToLower == 2:
+            self.tab_1.config(border=2)
+            self.tab_2.config(border=0)
+            self.tab_3.config(border=2)
+        else:
+            self.tab_1.config(border=2)
+            self.tab_2.config(border=2)
+            self.tab_3.config(border=0)
+  
 class ViewMedia(Frame):
     def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
-        self.config(bg="white")
+        self.config(bg="lightblue")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
         
-        label = Label(self, text="View Data", fg="blue")
+        label = Label(self, text="View Data", fg="black")
         label.place(x = (parent.winfo_reqwidth() / 2) - int(label.winfo_reqwidth() / 2), 
                     y = (parent.winfo_reqheight() / 2) - int(label.winfo_reqheight() / 2))
         label.place(x = 600, y = 200)
