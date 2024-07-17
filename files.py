@@ -16,6 +16,11 @@ sources = [
         ('Camera 5', local_stream),
         ]
 
+parishes = [
+        "Kingston","St. Andrew","St. Catherine","Clarendon","Manchester","St. Elizabeth","Westmoreland","Hanover","St. James","Trelawny","St. Ann","St. Mary","Portland"," St. Thomas"]
+
+titles = ["Mr.", "Ms.", "Mrs."]
+
 app_screen = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Misc/app4.jpg"
 loading_gif = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Misc/croppedImages/"
 lot_path = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/ParkingLot1.txt"

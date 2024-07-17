@@ -588,6 +588,7 @@ class ViewWindow(Frame):
 class AddFeed(Frame):
     def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
+        from editFeedOptions import addFeed, editFeed, deleteFeed
         self.config(bg="grey")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
@@ -612,12 +613,31 @@ class AddFeed(Frame):
         mainFrame.grid_rowconfigure(0, weight=1)
         mainFrame.grid_columnconfigure(0, weight=1)
         
+        self.listOfFeeds = files.sources
+        self.listOfParishes = files.parishes
+        self.titles = files.titles
+        
         self.listOfViewFrames = {}
         
-        #for classes in (SingleView, DoubleView, QuadView):
-        #    theframe = classes(parent = mainFrame, master = self, feeds = self.listOfFeeds)
-        #    self.listOfViewFrames[classes] = theframe
-        #    theframe.grid(row = 0, column = 0, sticky = "nsew")
+        for classes in (addFeed, editFeed, deleteFeed):
+            theframe = classes(parent = mainFrame, master = self, sources = self.listOfFeeds,)
+            self.listOfViewFrames[classes] = theframe
+            theframe.grid(row = 0, column = 0, sticky = "nsew")
+        
+        self.tab_1 = Button(self.tabs, text = "Add Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, border = 1, command = lambda: self.show_frame(addFeed))
+        self.tab_1.place(x = 0, y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 1)
+        
+        self.tab_2 = Button(self.tabs, text = "Edit Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, border = 1, command = lambda: self.show_frame(editFeed))
+        self.tab_2.place(x = int(self.tabs.winfo_reqwidth() / 3), y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 1)
+        
+        self.tab_3 = Button(self.tabs, text = "Delete Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, border = 1, command = lambda: self.show_frame(deleteFeed))
+        self.tab_3.place(x = int(self.tabs.winfo_reqwidth() / 3) * 2, y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 2)
+        
+        self.show_frame(addFeed)        
+    
+    def show_frame(self, anotherClass):
+        frame = self.listOfViewFrames[anotherClass]
+        frame.tkraise()
         
         
 class ViewMedia(Frame):
