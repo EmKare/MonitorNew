@@ -1,5 +1,5 @@
-from tkinter import Tk, Label, Button, font, Canvas, Frame, LabelFrame, PhotoImage, Entry
-from tkinter.ttk import Combobox
+from tkinter import Tk, Label, Button, font, Canvas, Frame, LabelFrame, PhotoImage, Entry # noqa
+from tkinter.ttk import Combobox # noqa
 from tkinter import ttk as ttk
 import files
 
