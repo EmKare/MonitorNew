@@ -3,14 +3,16 @@ from PIL import Image, ImageTk
 from time import strftime, localtime
 import cv2 as cv
 
-class tkCamera(LabelFrame):
+class Camera(LabelFrame):
     
-    def __init__(self, window, display, video_source=0):
+    def __init__(self, window, display, title = "", video_source = None):
         super().__init__(window)
         
         self.window = window
         self.width, self.height = window.winfo_reqwidth(), window.winfo_reqheight()
+        self.title = title
         self.video_source = video_source
+        self.active_playing = False
         
         self.startFeedSymbol = "\u25B6"
         self.stopFeedSymbol = "\u25A0"        
@@ -28,6 +30,7 @@ class tkCamera(LabelFrame):
     def setVid(self):
         try:
             self.vid = MyVideoCapture(video_source = self.video_source, width = self.width, height = self.height)
+            self.active_playing = True
         except Exception:
             pass
 
@@ -53,9 +56,10 @@ class tkCamera(LabelFrame):
         
         if ret:
             frame = self.rescale(frame, self.width, self.height)
+            cv.putText(frame, self.title, (10,20), cv.FONT_HERSHEY_TRIPLEX, 0.4, (0,0,0), thickness = 1)
             if self.vid.recording:
                 self.vid.record(frame)
-                cv.putText(frame, "Recording",(10,20),cv.FONT_HERSHEY_TRIPLEX,0.4,(255,0,0),thickness=1)         
+                cv.putText(frame, "Recording", (10,30), cv.FONT_HERSHEY_TRIPLEX, 0.4, (255,0,0), thickness = 1)         
             self.image = Image.fromarray(frame)
             self.photo = ImageTk.PhotoImage(image=self.image)
             self.canvas.create_image(0, 0, image = self.photo, anchor = NW,)
@@ -78,6 +82,7 @@ class tkCamera(LabelFrame):
         except Exception:
             pass
         self.btn_startstop.config(text = f"{self.startFeedSymbol}", command = lambda : self.config_startButton(), fg = "green")
+        self.active_playing = False
         
     def rescale(self, frame, width, height):
         dimensions = (width, height)

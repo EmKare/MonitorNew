@@ -268,7 +268,7 @@ class Registration(window):
         self.passwordEntry.delete(0, END)
         self.reenterpasswordEntry.delete(0, END)
         
-#Login()
+Login()
     
         
 

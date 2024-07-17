@@ -23,6 +23,8 @@ class App(Tk):
         self.resizable(False, False)
         self.title(f"Find Me Parking App - User: {username}")
         self.timeBool = True
+        #-- getting streams --
+        self.vids = files.sources
         #SideMenu Window -------------------------------------------------------------------------------------------------------
         #frame for sidemenu
         self.sidemenuFrame = Frame(self, highlightthickness = 0, bd = 2, width = 150, height = self.__window_length, relief = "flat", )
@@ -46,11 +48,12 @@ class App(Tk):
         mainWindowFrame.pack(side="top", fill="both", expand=True)
         mainWindowFrame.grid_rowconfigure(0, weight=1)
         mainWindowFrame.grid_columnconfigure(0, weight=1)
+        #(1200,670)
         #dictionary of frames
         self.listOfFrames = {}
         #key = class, value is the class with the frame in constructor
         for classes in (EditWindow, ViewWindow, AddFeed, ViewMedia, Settings):
-            theframe = classes(parent = mainWindowFrame, master = self)
+            theframe = classes(parent = mainWindowFrame, master = self, sources= self.vids)
             self.listOfFrames[classes] = theframe
             theframe.grid(row = 0, column = 0, sticky = "nsew")
         #Side Menu Buttons-----------------------------------------------------------------------------------------------------------
@@ -81,7 +84,7 @@ class App(Tk):
         #-----------------------------------------------------------------------------------------------------------------------
 
         #Beginning frame
-        self.show_frame(EditWindow)  
+        self.show_frame(AddFeed)  
         #starts clock module
         self.getTime()      
         #starts tkinter
@@ -123,11 +126,11 @@ class App(Tk):
         Login()
         
 class EditWindow(Frame):
-    def __init__(self, parent, master):
+    def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
         self.config(bg="lightgreen")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
-        self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
+        self.__midpointAcross = int(self.__window_bredth / 2)
 
         #Variables
         self.done = True
@@ -138,8 +141,11 @@ class EditWindow(Frame):
         self.checkfeed = 0
         self.__lotNames = {}
         self.availableSpots = []
-        self.__listOfFeeds = ["MegaMart Parking Lot #1", "Sagicor Life Building Parking Lot", "NewLife Mall #3 Parking Lot"]
+        self.__listOfFeeds = sources
         
+        self.listLength = len(self.__listOfFeeds)
+        #print(f' EditWindow: {self.listLength}')
+        self.__listOfFeeds = ["MegaMart Parking Lot #1", "Sagicor Life Building Parking Lot", "NewLife Mall #3 Parking Lot"] #[x[0] for x in sources]
         #Get positions
         self.posList = self.getFileSetArray()
         
@@ -183,7 +189,7 @@ class EditWindow(Frame):
         self.endFeedButton = Button(self.buttonsLabelFrame, text = "Stop Feed", font = ('bold', 10), width = 15, height = 5, fg = "blue", bg = "white", command = lambda: self.closer())
         self.endFeedButton.place(x = 210, y = 0)
         #Exit program
-        self.exitButton = Button(self.buttonsLabelFrame, text = "TBD", font = ('bold', 10), width = 15, height = 5, fg = "black", bg = "red")#, command = lambda: self.closeAll(master))
+        self.exitButton = Button(self.buttonsLabelFrame, text = "Set Spots", font = ('bold', 10), width = 15, height = 5, fg = "black", bg = "red")#, command = lambda: self.closeAll())
         self.exitButton.place(x = 390, y = 0)
         
         #------------------------------------------------------------------------------------------------------------------------
@@ -517,17 +523,23 @@ class EditWindow(Frame):
         except Exception:
             pass
         print(self.__feed)
-        
-        #master.closeApp()
                          
 class ViewWindow(Frame):
-    def __init__(self, parent, master):
+    def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
-        from quadView import SingleView, DoubleView, QuadView
+        from typesOfView import SingleView, DoubleView, QuadView
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
-        self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
+        self.singleViewButton_bool, self.doubleViewButton_bool, self.quadViewButton_bool = True, True, True
         
-        self.listOfFeeds = ["A","B","C","D","E","F","G","H","I","J"]
+        self.listOfFeeds = sources
+        self.listLength = len(self.listOfFeeds)
+        
+        if self.listLength == 0:
+            self.singleViewButton_bool, self.doubleViewButton_bool, self.quadViewButton_bool = False, False, False
+        if self.listLength == 1:
+            self.doubleViewButton_bool, self.quadViewButton_bool = False, False
+        if self.listLength == 2:
+            self.quadViewButton_bool = False
         
         self.sideFrame = Frame(self, highlightthickness = 0, bd = 1,  relief = "flat", border = 1,  width = 155, height = self.__window_length,)
         self.sideFrame.place(x = 1050, y = 0,)
@@ -536,7 +548,7 @@ class ViewWindow(Frame):
         self.containerFrame.place(x = 0, y = 0, width = self.__window_bredth - self.sideFrame.winfo_reqwidth(), height = self.__window_length,)
         
         #frame for main window
-        mainFrame = Frame(self.containerFrame, highlightthickness = 0, bd = 0, relief = "flat", width = self.__window_bredth - self.sideFrame.winfo_reqwidth(), height = self.__window_length, )
+        mainFrame = Frame(self.containerFrame, highlightthickness = 0, bd = 0, relief = "flat", width = self.__window_bredth - self.sideFrame.winfo_reqwidth(), height = self.__window_length,)
         mainFrame.pack(side="top", fill="both", expand=True)
         mainFrame.grid_rowconfigure(0, weight=1)
         mainFrame.grid_columnconfigure(0, weight=1)
@@ -551,33 +563,65 @@ class ViewWindow(Frame):
         # Side Frame Label and Buttons ---------------------------------------------------------------------------------
         self.sideLabel = Label(self.sideFrame, text = "Viewing Options", font = ('calibri', 15, 'underline'), justify = "center", )
         self.sideLabel.place(x = 0, y = 0, width = self.sideFrame.winfo_reqwidth(), height = 40)
+        
         self.singleViewButton = Button(self.sideFrame, text = "Single", font = ('calibri', 18), fg = "black", bd= 0,highlightthickness = 0, border = 1, command=lambda: self.show_frame(SingleView))
         self.singleViewButton.place(x = 0, y = 40, width = self.sideFrame.winfo_reqwidth(), height = 210)
+        if not self.singleViewButton_bool:
+            self.singleViewButton.config(state = "disabled")
+        
         self.doubleViewButton = Button(self.sideFrame, text = "Double", font = ('calibri', 18), fg = "black", bd= 0,highlightthickness = 0, border = 1, command=lambda: self.show_frame(DoubleView))
         self.doubleViewButton.place(x = 0, y = 250, width = self.sideFrame.winfo_reqwidth(), height = 210)
+        if not self.doubleViewButton_bool:
+            self.doubleViewButton.config(state = "disabled")
+        
         self.quadViewButton = Button(self.sideFrame, text = "Quad", font = ('calibri', 18), fg = "black", bd= 0,highlightthickness = 0, border = 1, command=lambda: self.show_frame(QuadView))
         self.quadViewButton.place(x = 0, y = 460, width = self.sideFrame.winfo_reqwidth(), height = 210)
+        if not self.quadViewButton_bool:
+            self.quadViewButton.config(state = "disabled")
         #----------------------------------------------------------------------------------------------------------------
-        self.show_frame(SingleView)
+        self.show_frame(DoubleView)
     
     def show_frame(self, anotherClass):
         frame = self.listOfViewFrames[anotherClass]
         frame.tkraise()
                 
 class AddFeed(Frame):
-    def __init__(self, parent, master):
+    def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
         self.config(bg="grey")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
         
-        label = Label(self, text="Add Feed", fg="yellow")
-        label.place(x = (parent.winfo_reqwidth() / 2) - int(label.winfo_reqwidth() / 2), 
-                    y = (parent.winfo_reqheight() / 2) - int(label.winfo_reqheight() / 2))
-        label.place(x = 50, y = 50)
+        self.tabs = Frame(self, highlightthickness = 0, bd = 1,  relief = "flat", border = 1,  width = self.__window_bredth, height = 64, bg = "lightgray")
+        self.tabs.place(x = 0, y = 0,)
+        
+        self.tab_1 = Button(self.tabs, text = "Tab 1", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, border = 1,)
+        self.tab_1.place(x = 0, y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 1)
+        
+        self.tab_2 = Button(self.tabs, text = "Tab 2", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, border = 1,)
+        self.tab_2.place(x = int(self.tabs.winfo_reqwidth() / 3), y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 1)
+        
+        self.tab_3 = Button(self.tabs, text = "Tab 3", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, border = 1,)
+        self.tab_3.place(x = int(self.tabs.winfo_reqwidth() / 3) * 2, y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 2)
+        
+        self.containerFrame = Frame(self, highlightthickness = 0, bd = 2,  relief = "flat", border=0,)
+        self.containerFrame.place(x = 0, y = self.tabs.winfo_reqheight(), width = self.__window_bredth, height = self.__window_length - self.tabs.winfo_reqheight(),)
+        #frame for main window
+        mainFrame = Frame(self.containerFrame, highlightthickness = 0, bd = 0, relief = "flat", width = self.__window_bredth, height = self.__window_length - self.tabs.winfo_reqheight(), bg="lightblue")
+        mainFrame.pack(side="top", fill="both", expand=True)
+        mainFrame.grid_rowconfigure(0, weight=1)
+        mainFrame.grid_columnconfigure(0, weight=1)
+        
+        self.listOfViewFrames = {}
+        
+        #for classes in (SingleView, DoubleView, QuadView):
+        #    theframe = classes(parent = mainFrame, master = self, feeds = self.listOfFeeds)
+        #    self.listOfViewFrames[classes] = theframe
+        #    theframe.grid(row = 0, column = 0, sticky = "nsew")
+        
         
 class ViewMedia(Frame):
-    def __init__(self, parent, master):
+    def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
         self.config(bg="white")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
@@ -589,7 +633,7 @@ class ViewMedia(Frame):
         label.place(x = 600, y = 200)
 
 class Settings(Frame):
-    def __init__(self, parent, master):
+    def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
         self.config(bg="lightblue")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()

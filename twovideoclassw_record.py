@@ -8,43 +8,48 @@ import files as files
 
 class MyVideoCapture:
 
-    def __init__(self, video_source=0, width=None, height=None, fps=None):
+    def __init__(self, video_source=None, width=None, height=None, fps=None):
     
         self.video_source = video_source
         self.width = width
         self.height = height
         self.fps = fps
         
+        if video_source is None:
+            pass
+        else:
+            self.vid = cv2.VideoCapture(video_source)
+        
         # Open the video source
-        self.vid = cv2.VideoCapture(video_source)
-        if not self.vid.isOpened():
-            raise ValueError("[MyVideoCapture] Unable to open video source", video_source)
+        
+            #if not self.vid.isOpened():
+            #    raise ValueError("[MyVideoCapture] Unable to open video source", video_source)
 
-        # Get video source width and height
-        if not self.width:
-            self.width = int(self.vid.get(cv2.CAP_PROP_FRAME_WIDTH))    # convert float to int
-        if not self.height:
-            self.height = int(self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT))  # convert float to int
-        if not self.fps:
-            self.fps = int(self.vid.get(cv2.CAP_PROP_FPS))  # convert float to int
+            # Get video source width and height
+            if not self.width:
+                self.width = int(self.vid.get(cv2.CAP_PROP_FRAME_WIDTH))    # convert float to int
+            if not self.height:
+                self.height = int(self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT))  # convert float to int
+            if not self.fps:
+                self.fps = int(self.vid.get(cv2.CAP_PROP_FPS))  # convert float to int
 
-        # default value at start        
-        self.ret = False
-        self.frame = None
-        
-        self.convert_color = cv2.COLOR_BGR2RGB
-        #self.convert_color = cv2.COLOR_BGR2GRAY
-        self.convert_pillow = True
-        
-        # default values for recording        
-        self.recording = False
-        self.recording_filename = 'output.mp4'
-        self.recording_writer = None
-        
-        # start thread
-        self.running = True
-        self.thread = threading.Thread(target=self.process)
-        self.thread.start()
+            # default value at start        
+            self.ret = False
+            self.frame = None
+            
+            self.convert_color = cv2.COLOR_BGR2RGB
+            #self.convert_color = cv2.COLOR_BGR2GRAY
+            self.convert_pillow = True
+            
+            # default values for recording        
+            self.recording = False
+            self.recording_filename = 'output.mp4'
+            self.recording_writer = None
+            
+            # start thread
+            self.running = True
+            self.thread = threading.Thread(target=self.process)
+            self.thread.start()
         
     def start_recording(self, filename=None):
         if self.recording:
@@ -228,7 +233,7 @@ class App:
         self.window.mainloop()
     
     def on_closing(self, event=None):
-        print('[App] stoping threads')
+        print('[App] stopping threads')
         for source in self.vids:
             source.vid.running = False
         print('[App] exit')
@@ -237,9 +242,10 @@ class App:
 if __name__ == '__main__':     
 
     sources = [
-        ('me', 0), 
-        ('Carpark, Jamaica', files.local_cam),
-        ('Cats, Home', files.local_video),
+        ('Camera 1', files.local_live), 
+        ('Camera 2', files.local_cam),
+        ('Camera 3', files.local_video),
+        ('Camera 4', files.local_stream),
         #('ParkingLot, Poland', r"C:\Users\DELL\Desktop\MyJourney\Python\Parking\parking-space-counter-master\data\parking_1920_1080.mp4"),
         #('Baltic See, Poland', 'https://imageserver.webcamera.pl/rec/chlopy/latest.mp4'),
         #('Mountains, Poland', 'https://imageserver.webcamera.pl/rec/skolnity/latest.mp4'),
