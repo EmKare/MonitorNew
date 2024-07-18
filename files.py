@@ -21,6 +21,8 @@ parishes = [
 
 titles = ["Mr.", "Ms.", "Mrs."]
 
+
+
 app_screen = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Misc/app4.jpg"
 loading_gif = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Misc/croppedImages/"
 lot_path = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/ParkingLot1.txt"
