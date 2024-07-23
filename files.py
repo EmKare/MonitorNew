@@ -30,3 +30,64 @@ spot_names = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/spotNames.txt"
 amount_available = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/demoParking.txt"
 #text='☰'
 btn_image = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/create_button_light.png"
+rel_path = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Monitor/ParkingLots/"
+
+"""
+import os, os.path
+import files
+
+
+if os.path.exists(files.rel_path+"ParkingLot1"):
+   print("Folder exists")
+   if os.path.isfile(files.rel_path+"ParkingLot1/ParkingLot1.txt"):
+      print("File exists")
+   else:
+      print("File Doesn't exist")          
+else:
+   print("Folder Doesn't exist")
+   
+
+
+# simple version for working with CWD
+#print(len([name for name in os.listdir(files.rel_path) if os.path.isfile(name)]))
+
+# path joining version for other paths
+DIR = files.rel_path+"ParkingLot1"
+print(len([name for name in os.listdir(DIR) if os.path.isfile(os.path.join(DIR, name))]))
+for name in os.listdir(DIR):
+   print(name)
+   
+def folders_in(path_to_parent):
+        for fname in os.listdir(path_to_parent):
+                if os.path.isdir(os.path.join(path_to_parent,fname)):
+                        yield os.path.join(path_to_parent,fname)
+
+import files, os
+theList = list(folders_in(files.rel_path))
+
+for name in theList:
+    print(name)
+    
+from tkinter import Tk, Button, END, Listbox
+from tkinter import filedialog
+import os
+import files
+
+# path = files.rel_path
+# os.startfile(path)
+# ----------------------------
+# import webbrowser
+# webbrowser.open('file:///' + path)
+
+def open_directory():
+    directory = filedialog.askdirectory()
+    if directory: # if user didn't choose directory tkinter returns ''
+        os.chdir(directory) # change current working directory
+        for file_name in os.listdir(directory): # for every file in directory
+            if os.path.isfile(os.path.join(directory, file_name)): # if it's file add file name to the list
+                Listbox.insert(END, file_name)
+
+root = Tk()
+Button(root, text="Choose Directory", command=open_directory).pack()  # create a button which will call open_directory function
+root.mainloop()
+"""

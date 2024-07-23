@@ -1,0 +1,22 @@
+from tkinter import Tk, Button, END, Listbox
+from tkinter import filedialog
+import os
+import files
+
+# path = files.rel_path
+# os.startfile(path)
+# ----------------------------
+# import webbrowser
+# webbrowser.open('file:///' + path)
+
+def open_directory():
+    directory = filedialog.askdirectory()
+    if directory: # if user didn't choose directory tkinter returns ''
+        os.chdir(directory) # change current working directory
+        for file_name in os.listdir(directory): # for every file in directory
+            if os.path.isfile(os.path.join(directory, file_name)): # if it's file add file name to the list
+                Listbox.insert(END, file_name)
+
+root = Tk()
+Button(root, text="Choose Directory", command=open_directory).pack()  # create a button which will call open_directory function
+root.mainloop()

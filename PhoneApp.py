@@ -1,7 +1,8 @@
 from tkinter import Tk, ttk, Button, LabelFrame, Canvas, Label, NW
 from ParkingLot import ParkingLot
+from getParkingLot import ParkingLotInfo, GetLot
 from PIL import ImageTk, Image
-import files
+import files as files
 
 class FindMeParkingApp(Tk):
     def __init__(self, *args, **kwargs):
@@ -12,6 +13,7 @@ class FindMeParkingApp(Tk):
         self.title("Find Me Parking App")
         self.count, self.unbindEvent = 1, 0
         self.__checking, self.__readings = 0, 0
+        self.parkingLots = GetLot()
         
         self.newsize = (350, 300)
         self.labelFrame = LabelFrame(self, width = self.width-10, height = self.height-10)
@@ -31,7 +33,7 @@ class FindMeParkingApp(Tk):
         self.mainCanvas.create_image(0, 0, image = self.tk_im, anchor = NW, tags = "Im")
         self.mainCanvas.bind("<ButtonPress-1>", self.checkClick)
         
-    def checkClick(self,event): #98, 220, 195, 313
+    def checkClick(self,event):
         if self.unbindEvent == 0:
             self.unbindEvent = 1
             if 98 < event.x < 195  and 220 < event.y < 313:
@@ -92,16 +94,16 @@ class FindMeParkingApp(Tk):
             self.p.after(1000, self.loading)
             
     def displayParkingSpotInformation(self):
-        self.mainCanvas.create_text(int((self.width - 20) / 2), 80, text = f'Your parking spot is at {self.mySpot[0]}', font = ('bold', 20), anchor = "center", tags = 'text')
+        self.mainCanvas.create_text(int((self.width - 20) / 2), 80, text = f'Your parking spot is at {self.mySpot[1]}', font = ('bold', 20), anchor = "center", tags = 'text')
         self.imageLabel = Label(self.mainCanvas,width=355, height=305)
         self.imageLabel.place(x = 12, y = 150)
         self.imageLabel.config(image=self.EntranceMap)
-        self.mainCanvas.create_text(int((self.width - 20) / 2), 530, text = f' Please follow this guide map\nto get to {self.mySpot[0]} quickly and safely', font = ('bold', 12), anchor = "center", tags = 'text')
+        self.mainCanvas.create_text(int((self.width - 20) / 2), 530, text = f' Please follow this guide map\nto get to {self.mySpot[1]} quickly and safely', font = ('bold', 12), anchor = "center", tags = 'text')
         
     def createMainButton(self):
         self.getReadingButton = Button( bg = "lightgreen", fg = "white", command = lambda: self.checkAvailability(), highlightthickness=0, relief="flat", borderwidth=0,activebackground = "white", text = "Find Me Parking", font = ('bold', 20),)#  fg = "black",)
         self.getReadingButton.config(width = 20, height = 2)
-        self.getReadingButton.place(x = int((self.width) / 2) - int(self.getReadingButton.winfo_reqwidth() / 2), y = int((self.height - 100) / 2)-10)
+        self.getReadingButton.place(x = int((self.width) / 2) - int(self.getReadingButton.winfo_reqwidth() / 2), y = int((self.height - 100) / 2)-10) 
         
     def checker(self):
         if self.__checking == 0:
@@ -139,31 +141,28 @@ class FindMeParkingApp(Tk):
     
     def getMapImages(self):        
         index = ""
-        if self.mySpot[2] < 10:
-            index = f'0{self.mySpot[2]}'
+        if self.mySpot[3] < 10:
+            index = f'0{self.mySpot[3]}'
         else:
-            index = self.mySpot[2]
-        entrance = ParkingLot( files.rel_path+"ParkingLot1/ParkingLot1_map.txt", #text file
+            index = self.mySpot[3]
+        entrance = ParkingLot(files.folderpath+"ParkingLot1.txt", #text file
                                 "E", #starting point
                                 index, #goal
                                 1, #type of map
-                                self.mySpot[0], #name of the spot
-                               files.rel_path+"ParkingLot1/Entrance3.png" #name of the image
+                                self.mySpot[1], #name of the spot
+                                files.folderpath+"Entrance.png" #name of the image
                                 )#f"Entrance_{self.mySpot[1]}.png") #name of the image
         self.EntranceMap = ImageTk.PhotoImage(entrance.output_image().resize(self.newsize, Image.Resampling.LANCZOS))
-        exit = ParkingLot(files.rel_path+"ParkingLot1/ParkingLot1_map.txt", index, "X", 0, self.mySpot[0], files.rel_path+"ParkingLot1/Exit3.png")#f"Exit_{self.mySpot[1]}.png") f"Leaving {self.mySpot[1]}"
+        exit = ParkingLot(files.folderpath+"ParkingLot1.txt", index, "X", 0, self.mySpot[1], files.folderpath+"Exit.png")#f"Exit_{self.mySpot[1]}.png") f"Leaving {self.mySpot[1]}"
         self.ExitMap = ImageTk.PhotoImage(exit.output_image().resize(self.newsize, Image.Resampling.LANCZOS))
-        #self.getSpotImage()
 
     def __getParkingSpot(self):
         from random import choice
-        #availableSpots = []
-        this = ""
+        availableSpots = []
         for spot in self.__getLotSpotsStatuses: 
-            if spot[1] == "A":
-                this = spot
-                #availableSpots.append(spot)
-        return this#choice(availableSpots)
+            if spot[2] == "A":
+                availableSpots.append(spot)
+        return choice(availableSpots)
 
     def getReadings(self):
         with open(files.amount_available) as f:
@@ -173,25 +172,17 @@ class FindMeParkingApp(Tk):
                 
     def getSpots(self):
         import re
-        with open(files.rel_path+"ParkingLot1/ParkingLot1.txt") as f:
+        with open(files.spot_names) as f:
             for line in f:
                 word = line.rstrip().split('#')
                 spots = []
-                #pos = re.sub(r"[\([{})\]]", "", word[0])
-                #res = tuple(map(int, pos.split(', ')))
-                #spots.append(res) #position
-                spots.append(word[1].strip()) #name
-                spots.append(word[2].strip()) #status
-                spots.append(int(word[0].strip())) #index
+                pos = re.sub(r"[\([{})\]]", "", word[0])
+                res = tuple(map(int, pos.split(', ')))
+                spots.append(res) #position
+                spots.append(word[2].strip()) #name
+                spots.append(word[3].strip()) #status
+                spots.append(int(word[1].strip())) #index
                 self.__getLotSpotsStatuses.append(spots)
-                
-    def getSpotImage(self):
-        im = Image.open(files.image_name)
-        im1 = im.resize((550, 360), Image.Resampling.LANCZOS)
-        x, y = self.mySpot[0]
-        x = int(x * 0.97)        
-        y = int(y * 0.96)
-        return im1.crop((x, y, x + 53, y + 22))   
 
 FindMeParkingApp()
 

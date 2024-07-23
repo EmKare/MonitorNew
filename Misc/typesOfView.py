@@ -46,7 +46,7 @@ class viewFeed(Tk):
         #----------------------------------------------------------------------------------------------------------------
         self.show_frame(DoubleView) 
         
-        #self.mainloop()
+        self.mainloop()
     
     def show_frame(self, anotherClass):
         frame = self.listOfViewFrames[anotherClass]
@@ -159,11 +159,18 @@ class DoubleView(Frame):
                 self.video_source1 = feed
                 to_pop = demo.index(feed) #locates combo 1 value in new list
                 demo.pop(to_pop) #pops combo 1 value from new list at this index
+                break
+        for feed in demo:
+            if feed[0] == comb2cur:
+                to_pop = demo.index(feed) #locates combo 2 value in new list
+                demo.pop(to_pop) #pops combo 2 value from new list at this index
+                break
         
         if not self.vid1.active_playing:
             self.vid1 = Camera(self.canvas_1_LabelFrame, 1, self.video_source1[0], self.video_source1[1],)
             self.vid1.place(x = 0, y = 0)
-                         
+        
+        self.canvas_1_ComboBox['values'] = [x[0] for x in demo] #assigns combo 1 values as those from new list
         self.canvas_2_ComboBox['values'] = [x[0] for x in demo] #assigns combo 2 values as those from new list
         
         if comb1cur == comb2cur:
@@ -183,6 +190,10 @@ class DoubleView(Frame):
         for feed in demo:
             if feed[0] == comb2cur:
                 self.video_source2 = feed
+                to_pop = demo.index(feed) #locates combo 2 value in new list
+                demo.pop(to_pop) #pops combo 2 value from new list at this index
+        for feed in demo:
+            if feed[0] == comb1cur:
                 to_pop = demo.index(feed) #locates combo 1 value in new list
                 demo.pop(to_pop) #pops combo 1 value from new list at this index
                 
@@ -190,6 +201,7 @@ class DoubleView(Frame):
             self.vid2 = Camera(self.canvas_2_LabelFrame, 1, self.video_source2[0], self.video_source2[1],)
             self.vid2.place(x = 0, y = 0)        
 
+        self.canvas_2_ComboBox['values'] = [x[0] for x in demo] #assigns combo 1 values as those from new list
         self.canvas_1_ComboBox['values'] = [x[0] for x in demo] #assigns combo 1 values as those from new list
         
         if comb2cur == comb1cur:
@@ -280,10 +292,11 @@ class QuadView(Frame):
         for feed in demo:
             if feed[0] == self.canvas_1_current:                
                 to_set = demo.index(feed) #locates combo 1 value in new list
+                break
 
         if comb1cur == self.canvas_2_ComboBox.get():
             self.canvas_2_ComboBox.current(to_set)
-            
+  
         if comb1cur == self.canvas_3_ComboBox.get():
             self.canvas_3_ComboBox.current(to_set)
             
@@ -293,32 +306,31 @@ class QuadView(Frame):
         comb2cur = self.canvas_2_ComboBox.get() #gets combo 2 value
         comb3cur = self.canvas_3_ComboBox.get() #gets combo 3 value
         comb4cur = self.canvas_4_ComboBox.get() #gets combo 4 value
-        
-        for feed in demo:
+
+        for feed in demo:            
             if feed[0] == comb1cur:
                 self.video_source1 = feed
-                try:
-                    demo.pop(demo.index(feed))
-                except Exception:
-                    pass
-            if feed[0] == comb2cur:
-                try:
-                    to_pop = demo.index(comb2cur) #locates combo 2 value in list
-                    demo.pop(to_pop) #pops combo 2 value from list at this index
-                except Exception:
-                    pass
-            if feed[0] == comb3cur:
-                try:
-                    to_pop = demo.index(comb3cur) #locates combo 3 value in list
-                    demo.pop(to_pop) #pops combo 3 value from list at this index
-                except Exception:
-                    pass
-            if feed[0] == comb4cur:           
-                try:
-                    to_pop = demo.index(comb4cur) #locates combo 4 value in list
-                    demo.pop(to_pop) #pops combo 4 value from list at this index
-                except Exception:
-                    pass
+                to_pop = demo.index(feed)
+                demo.pop(to_pop)
+                break
+                
+        for feed in demo:
+            if feed[0] == comb2cur:                
+                to_pop = demo.index(feed) #locates combo 2 value in list
+                demo.pop(to_pop) #pops combo 2 value from list at this index
+                break
+                
+        for feed in demo:        
+            if feed[0] == comb3cur:                
+                to_pop = demo.index(feed) #locates combo 3 value in list
+                demo.pop(to_pop) #pops combo 3 value from list at this index
+                break
+        
+        for feed in demo:    
+            if feed[0] == comb4cur:        
+                to_pop = demo.index(feed) #locates combo 4 value in list
+                demo.pop(to_pop) #pops combo 4 value from list at this index
+                break
                 
         if not self.vid1.active_playing:
             self.vid1 = Camera(self.canvas_1_LabelFrame, 2, self.video_source1[0], self.video_source1[1],)
@@ -338,6 +350,7 @@ class QuadView(Frame):
         for feed in demo:
             if feed[0] == self.canvas_2_current:                
                 to_set = demo.index(feed) #locates combo 2 value in new list
+                break
 
         if comb2cur == self.canvas_1_ComboBox.get():
             self.canvas_1_ComboBox.current(to_set)
@@ -359,24 +372,34 @@ class QuadView(Frame):
                     demo.pop(demo.index(feed))
                 except Exception:
                     pass
+                break
+            
+        for feed in demo:
             if feed[0] == comb1cur:
                 try:
-                    to_pop = demo.index(comb1cur) #locates combo 1 value in list
+                    to_pop = demo.index(feed) #locates combo 1 value in list
                     demo.pop(to_pop) #pops combo 1 value from list at this index
                 except Exception:
                     pass
+                break
+            
+        for feed in demo:
             if feed[0] == comb3cur:
                 try:
-                    to_pop = demo.index(comb3cur) #locates combo 3 value in list
+                    to_pop = demo.index(feed) #locates combo 3 value in list
                     demo.pop(to_pop) #pops combo 3 value from list at this index
                 except Exception:
                     pass
+                break
+            
+        for feed in demo:
             if feed[0] == comb4cur:           
                 try:
-                    to_pop = demo.index(comb4cur) #locates combo 4 value in list
+                    to_pop = demo.index(feed) #locates combo 4 value in list
                     demo.pop(to_pop) #pops combo 4 value from list at this index
                 except Exception:
                     pass
+                break
         
         if not self.vid2.active_playing:
             self.vid2 = Camera(self.canvas_2_LabelFrame, 2, self.video_source2[0], self.video_source2[1],)
@@ -397,6 +420,7 @@ class QuadView(Frame):
         for feed in demo:
             if feed[0] == self.canvas_3_current:                
                 to_set = demo.index(feed) #locates combo 3 value in new list
+                break
 
         if comb3cur == self.canvas_1_ComboBox.get():
             self.canvas_1_ComboBox.current(to_set)
@@ -418,24 +442,34 @@ class QuadView(Frame):
                     demo.pop(demo.index(feed))
                 except Exception:
                     pass
+                break
+            
+        for feed in demo:
             if feed[0] == comb1cur:
                 try:
-                    to_pop = demo.index(comb1cur) #locates combo 1 value in list
+                    to_pop = demo.index(feed) #locates combo 1 value in list
                     demo.pop(to_pop) #pops combo 1 value from list at this index
                 except Exception:
                     pass
+                break
+            
+        for feed in demo:
             if feed[0] == comb2cur:
                 try:
-                    to_pop = demo.index(comb2cur) #locates combo 2 value in list
+                    to_pop = demo.index(feed) #locates combo 2 value in list
                     demo.pop(to_pop) #pops combo 2 value from list at this index
                 except Exception:
                     pass
+                break
+            
+        for feed in demo:
             if feed[0] == comb4cur:           
                 try:
-                    to_pop = demo.index(comb4cur) #locates combo 4 value in list
+                    to_pop = demo.index(feed) #locates combo 4 value in list
                     demo.pop(to_pop) #pops combo 4 value from list at this index
                 except Exception:
                     pass
+                break
         
         if not self.vid3.active_playing:
             self.vid3 = Camera(self.canvas_3_LabelFrame, 2, self.video_source3[0], self.video_source3[1],)
@@ -456,6 +490,7 @@ class QuadView(Frame):
         for feed in demo:
             if feed[0] == self.canvas_4_current:                
                 to_set = demo.index(feed) #locates combo 4 value in new list
+                break
 
         if comb4cur == self.canvas_1_ComboBox.get():
             self.canvas_1_ComboBox.current(to_set)
@@ -477,24 +512,34 @@ class QuadView(Frame):
                     demo.pop(demo.index(feed))
                 except Exception:
                     pass
+                break
+            
+        for feed in demo:
             if feed[0] == comb1cur:
                 try:
-                    to_pop = demo.index(comb1cur) #locates combo 1 value in list
+                    to_pop = demo.index(feed) #locates combo 1 value in list
                     demo.pop(to_pop) #pops combo 1 value from list at this index
                 except Exception:
                     pass
+                break
+            
+        for feed in demo:
             if feed[0] == comb2cur:
                 try:
-                    to_pop = demo.index(comb2cur) #locates combo 2 value in list
+                    to_pop = demo.index(feed) #locates combo 2 value in list
                     demo.pop(to_pop) #pops combo 2 value from list at this index
                 except Exception:
                     pass
+                break
+            
+        for feed in demo:
             if feed[0] == comb3cur:           
                 try:
-                    to_pop = demo.index(comb3cur) #locates combo 3 value in list
+                    to_pop = demo.index(feed) #locates combo 3 value in list
                     demo.pop(to_pop) #pops combo 3 value from list at this index
                 except Exception:
                     pass
+                break
                 
         if not self.vid4.active_playing:
             self.vid4 = Camera(self.canvas_4_LabelFrame, 2, self.video_source4[0], self.video_source4[1],)
@@ -508,7 +553,7 @@ class QuadView(Frame):
         
         self.canvas_4_current = comb4cur
       
-#viewFeed()
+viewFeed()
 
 """
         self.canvas_startButton = Button(self, text = "Start", font = ('bold', 10), fg = "blue", relief = "flat", command = lambda : self.setCap())

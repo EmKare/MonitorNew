@@ -35,11 +35,15 @@ class QueueFrontier(StackFrontier):
             self.frontier = self.frontier[1:]
             return node
 
+
 class ParkingLot():
-    def __init__(self, filename,start,goal,typer,spot,imagename):
+    def __init__(self, contents,lot_sides,start,goal,typer,spot,imagename,lottype,lotnumber):
         self.typer = typer
         self.spot = spot
         self.imagename = imagename
+        self.lottype = lottype
+        self.lot_sides = lot_sides
+        self.lotnumber = int(lotnumber)
         #START OF MY TING
         self.spots_before = []
         start_spot = str(start)
@@ -49,9 +53,8 @@ class ParkingLot():
             self.getPreviousLots(int(goal)) 
         except Exception:
             pass
-        # Read file and set height and width of maze    
-        with open(filename) as f:
-            self.contents = f.read()
+        # Read file and set height and width of maze  
+        self.contents = contents
         #print(self.contents)
         # Validate start and goal
         if self.contents.count(start_spot) != 1:
@@ -66,8 +69,6 @@ class ParkingLot():
         for prev in self.spots_before:    
             self.checkPreviousSpots(str(prev[1]),"@")
             check += 1
-        #print(self.contents)
-        #print([x for x in self.spots_before])
         #END OF MY TING
         # Determine height and width of maze
         self.contents = self.contents.splitlines()
@@ -106,12 +107,8 @@ class ParkingLot():
         self.solve()
     
     def getPreviousLots(self,goal):
-        lot_sides = [("A",68,57),("B",56,45),("C",44,34),("D",33,23),("E",22,11),("F",10,0)]
-        #lot_sides = [("A",9,0),("B",19,10),("C",29,20),("D",39,30),("E",49,40)]
-        #lot_sides = [("A",5,0),("B",15,6)] #A to the left
-        #lot_sides = [("A",7,0),("B",15,8),("C",23,16),("D",29,24),("E",35,30),("F",41,36),("G",46,42)]
         #uses preset lot information: row letter, 'row highest', 'row lowest'
-        for i, values in enumerate(lot_sides):
+        for i, values in enumerate(self.lot_sides):
             #if the 'row highest' is greater than the goal AND 'row lowest' is lower than the goal
             if values[1] >= goal and values[2] <= goal:
                 #diff is the 'row highest'
@@ -119,9 +116,11 @@ class ParkingLot():
                 #num is the amount of lots in the row before the goal: the 'row highest' - the goal
                 num = values[1] - goal
                 for i in range(num):
-                    #if the 'row highest' is less' than 10, append a zero 
+                    #if the 'row highest' is less' than 10, append a zero
                     if diff < 10:
                         self.spots_before.append((i,f'0{diff}',f'{values[0]}{values[1] - diff}'))
+                    elif diff == 10:
+                        self.spots_before.append((i,f'{diff}',f'{values[0]}{values[1] - diff}'))
                     else:
                         self.spots_before.append((i,f'{values[1] - i}',f'{values[0]}{values[1] - (values[1] - (i + 1))}'))
                     #decrement diff
@@ -143,27 +142,36 @@ class ParkingLot():
         
     def checkParam(self,spot,letter):
         import re
-        if len(spot) == 2: #self.checkParam(start_spot,"A") = (spot=09,letter="A")
-            try:
+        if len(spot) == 2:            
                 #searches for the 'spot' in the uploaded parking lot file
                 match = (re.search(spot, self.contents))
                 x, y = match.span()
-                #print(f"({match.span()})")
-                
+                #print(f"({match.span()})")                
                 slot = f'{self.contents[x]}{self.contents[y-1]}'
-                #print(f"({slot})")
-                if int(slot) <= 10 or int(slot) <= 33 and int(slot) >= 23 or int(slot) <= 56 and int(slot) >= 45:
-                #HERESO [("A",0,9),("B",10,19),("C",20,29),("D",30,39),("E",40,49)]
-                #if int(slot) <= 19 and int(slot) > 9 or int(slot) <= 39 and int(slot) >= 29:   
+                #[("A",68,57),("B",56,45),("C",44,34),("D",33,23),("E",22,11),("F",10,0)]
+                if self.lotnumber == 1:
+                    if int(slot) <= 10 or int(slot) <= 33 and int(slot) > 22 or int(slot) <= 56 and int(slot) > 44:
+                        self.contents = self.contents.replace(slot , f"{letter} ")
+                    else:
+                        self.contents = self.contents.replace(slot , f" {letter}")
+                #[("A",9,0),("B",19,10),("C",29,20),("D",39,30),("E",49,40)]
+                elif self.lotnumber == 2:
+                    if int(slot) <= 19 and int(slot) > 9 or int(slot) <= 39 and int(slot) > 29:
+                        self.contents = self.contents.replace(slot , f"{letter} ")
+                    else:
+                        self.contents = self.contents.replace(slot , f" {letter}")
                 #[("A",5,0),("B",15,6)]
-                #if int(slot) <= 5 and int(slot) >= 0:
-                #[("A",7,0),("B",15,8),("C",23,16),("D",29,24),("E",35,30),("F",41,36),("G",46,42)]
-                #if int(slot) <= 7 or int(slot) <= 23 and int(slot) > 15 or int(slot) <= 35 and int(slot) > 29 or int(slot) <= 46 and int(slot) > 41:            
-                    self.contents = self.contents.replace(slot , f"{letter} ")
-                else:
-                    self.contents = self.contents.replace(slot , f" {letter}")           
-            except Exception:
-                pass
+                elif self.lotnumber == 3:
+                    if int(slot) <= 5 and int(slot) >= 0:                 
+                        self.contents = self.contents.replace(slot , f"{letter} ")
+                    else:
+                        self.contents = self.contents.replace(slot , f" {letter}") 
+                elif self.lotnumber == 4:
+                #[("A",7,0),("B",15,8),("C",23,16),("D",29,24),("E",35,30),("F",41,36),("G",46,42)]     
+                    if int(slot) <= 7 or int(slot) <= 23 and int(slot) > 15 or int(slot) <= 35 and int(slot) > 29 or int(slot) <= 46 and int(slot) > 41:
+                        self.contents = self.contents.replace(slot , f"{letter} ")
+                    else:
+                        self.contents = self.contents.replace(slot , f" {letter}")             
         if len(spot) == 1:
             self.contents = self.contents.replace(spot , letter)            
 
@@ -177,16 +185,30 @@ class ParkingLot():
                 if len(letter) == 2:
                         self.contents = self.contents.replace(slot , f"{letter}")
                 else:
-                    #1 [("A",68,57),("B",56,45),("C",44,34),("D",33,23),("E",22,11),("F",10,0)]
-                    if int(slot) <= 9 or int(slot) <= 33 and int(slot) > 22 or int(slot) <= 56 and int(slot) >= 45:
-                    #2 HERESO [("A",0,9),("B",10,19),("C",20,29),("D",30,39),("E",40,49)]
-                    #if int(slot) <= 19 and int(slot) > 9 or int(slot) <= 39 and int(slot) >= 29:
+                    if self.lotnumber == 1:
+                    #1  [("A",68,57),("B",56,45),("C",44,34),("D",33,23),("E",22,11),("F",10,0)]
+                        if int(slot) <= 10 or int(slot) <= 33 and int(slot) > 22 or int(slot) <= 56 and int(slot) > 44:
+                            self.contents = self.contents.replace(slot , f"-{letter}")
+                        else:
+                            self.contents = self.contents.replace(slot , f"{letter}-")
+                    elif self.lotnumber == 2:
+                    #2  [("A",9,0),("B",19,10),("C",29,20),("D",39,30),("E",49,40)]
+                        if int(slot) <= 19 and int(slot) > 9 or int(slot) <= 39 and int(slot) > 29:
+                            self.contents = self.contents.replace(slot , f"-{letter}")
+                        else:
+                            self.contents = self.contents.replace(slot , f"{letter}-")
+                    elif self.lotnumber == 3:
                     #3  [("A",5,0),("B",15,6)]
-                    #if int(slot) <= 5 and int(slot) >= 0:
-                    #if int(slot) <= 7 or int(slot) <= 23 and int(slot) > 15 or int(slot) <= 35 and int(slot) > 29 or int(slot) <= 46 and int(slot) > 41:
-                        self.contents = self.contents.replace(slot , f"-{letter}")
-                    else:
-                        self.contents = self.contents.replace(slot , f"{letter}-")           
+                        if int(slot) <= 5 and int(slot) >= 0:
+                            self.contents = self.contents.replace(slot , f"-{letter}")
+                        else:
+                            self.contents = self.contents.replace(slot , f"{letter}-")
+                    elif self.lotnumber == 4:
+                    #4  [("A",7,0),("B",15,8),("C",23,16),("D",29,24),("E",35,30),("F",41,36),("G",46,42)]
+                        if int(slot) <= 7 or int(slot) <= 23 and int(slot) > 15 or int(slot) <= 35 and int(slot) > 29 or int(slot) <= 46 and int(slot) > 41:
+                            self.contents = self.contents.replace(slot , f"-{letter}")
+                        else:
+                            self.contents = self.contents.replace(slot , f"{letter}-")           
             except Exception:
                 pass
         if len(spot) == 1:
@@ -263,7 +285,8 @@ class ParkingLot():
                     frontier.add(child)
 
     def output_image(self, show_solution=True, show_explored=False):
-        from PIL import Image, ImageDraw, ImageFont 
+        from PIL import Image, ImageDraw, ImageFont
+        newsize = (400, 300)
         toORfrom = ""
         starting_point = ""
         ending_point = ""
@@ -354,5 +377,6 @@ class ParkingLot():
                         draw.text(((j * cell_size) + 10, (i * cell_size) + 10), thisSpot[2], (0, 0, 0),font = ImageFont.load_default(size=30))
         # Draw map heading        
         draw.text((40, 0),f"Guide Map For {toORfrom} {self.spot}",(255,255,255),font = ImageFont.load_default(size=50))
+        img.resize(newsize, Image.Resampling.LANCZOS)
         img.save(self.imagename)
-        return img
+        #return img
