@@ -34,6 +34,7 @@ class Scrollable(tk.Frame):
 
         canvas_width = event.width
         self.canvas.itemconfig(self.windows_item, width = canvas_width)
+        
 
     def update(self):
         "Update the canvas and the scrollregion"
@@ -59,7 +60,7 @@ tk.Label(footer, text="The Footer").pack()
 scrollable_body = Scrollable(body, width=32)
 
 for i in range(30):
-    tk.Button(scrollable_body, text=f"I'm button {i} in the scrollable frame").grid()
+    tk.Label(scrollable_body, text=f"I'm button {i} in the scrollable frame").grid()
 
 scrollable_body.update()
 

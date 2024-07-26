@@ -126,7 +126,7 @@ class FindMeParkingApp(Tk):
         self.mainCanvas.create_text(int((self.width - 20) / 2), int((self.height - 545) / 2), text = "is 600 meters away", font = ('bold', 15), anchor = "center", tags = 'text')
         self.imageLabel = Label(self.mainCanvas,width=355, height=305)
         self.imageLabel.place(x = 12, y = 150)
-        self.getImage(files.image_name, True, self.newsize)
+        self.getImage(f"{files.rel_path}ParkingLot2/ParkingLot2_logo.png", True, self.newsize)
         self.getReadings()
         self.mainCanvas.create_text(int((self.width - 20) / 2), 510, text = f'It currently has {self.__readings} available parking spots.', font = ('bold', 13), anchor = "center", tags = 'text')
         self.getReadingButton.config(text = "  Reserve a Spot   ", command = lambda: self.checker(),width = 0, height = 0, font = ('bold',10))

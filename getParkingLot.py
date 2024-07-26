@@ -4,12 +4,13 @@ class GetLot:
     def __init__(self):        
         self.listOfFolders = list(self.folders_in(rel_path)) #folder names yielded will be added to list
         self.list_Len = len(self.listOfFolders) #unsure if still needed
-        self.ParkingLots = [] #All 4 parking Lots are here
-        self.showAll() #adds parking lots to a list
-        #for lot in self.ParkingLots:
+        #self.ParkingLots = [] #All 4 parking Lots are here
+        #self.showAll() #adds parking lots to a list
+        #for lot in self.listOfFolders:
         #    print(lot.ParkingLot_sides)
                 
             #print(lot.ParkingLot_name)
+        #print(self.listOfFolders[0])
         
     def folders_in(self,path_to_parent):
         from os import path, listdir
@@ -30,9 +31,13 @@ class ParkingLotInfo:
         self.map = f"{self.path}{lotname}_map{file_type}" #file with parking lot map layout
         self.sides = f"{self.path}{lotname}_sides{file_type}" #file with parking lot's rows and lot numbers
         self.type = f"{self.path}{lotname}_type{file_type}" #file with parking lot columns and lot numbers
+        self.name = f"{self.path}{lotname}_name{file_type}"
+        self.imagepath = f"{self.path}{lotname}_logo.png"
         #self.amount = f"{self.path}{lotname}_amountAvailable{file_type}"
         
-        self.ParkingLot_name = lotname #name of the parking lot
+        self.newsize = (350, 300)
+        
+        self.ParkingLot_name = self.getName() #name of the parking lot
         self.ParkingLot_mapcontents = self.getContents() #gets the map layout for the parking lot
         self.ParkingLot_sides = [] #list for parking lot's rows and lot numbers
         self.ParkingLot_spotsStatuses = [] #list for all spots in parking lot
@@ -43,14 +48,23 @@ class ParkingLotInfo:
         self.getSides() #gets parking lot's rows and lot numbers
         self.getSpots() #gets all spots in parking lot
         self.getAvailableSpots() #gets all available spots in parking lot
+        self.getImage() #gets logo image for parking lot
     
     def getType(self):
         with open(self.type) as f: #this file only has 1 number in it
-            return int((f.read().strip())) 
+            return int((f.read().strip()))
+        
+    def getName(self):
+        with open(self.name) as f: #this file contains the map of the parking lot
+            return f.read()
     
     def getContents(self):
         with open(self.map) as f: #this file contains the map of the parking lot
-            return f.read() 
+            return f.read()
+        
+    def getImage(self):
+        from PIL import ImageTk, Image
+        self.image = ImageTk.PhotoImage(Image.open(f"{self.imagepath}").resize((self.newsize), Image.Resampling.LANCZOS))
 
     """       
     def getReadings(self):

@@ -37,11 +37,10 @@ class QueueFrontier(StackFrontier):
 
 
 class ParkingLot():
-    def __init__(self, contents,lot_sides,start,goal,typer,spot,imagename,lottype,lotnumber):
+    def __init__(self, contents,lot_sides,start,goal,typer,spot,imagename,lotnumber):
         self.typer = typer
         self.spot = spot
         self.imagename = imagename
-        self.lottype = lottype
         self.lot_sides = lot_sides
         self.lotnumber = int(lotnumber)
         #START OF MY TING
@@ -379,4 +378,4 @@ class ParkingLot():
         draw.text((40, 0),f"Guide Map For {toORfrom} {self.spot}",(255,255,255),font = ImageFont.load_default(size=50))
         img.resize(newsize, Image.Resampling.LANCZOS)
         img.save(self.imagename)
-        #return img
+        return img
