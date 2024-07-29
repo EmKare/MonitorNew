@@ -1,12 +1,13 @@
 from tkinter import Tk, ttk, Button, LabelFrame, Canvas, Scrollbar,\
 Listbox, Label, Entry, Frame, font, NW, RIGHT, LEFT, BOTH, Y, END
 from getParkingLot import GetLot, ParkingLotInfo
-from datetime import datetime
-from time import strftime, sleep
-from tkinter.ttk import Combobox
-from PIL import ImageTk, Image
 from random import choice, randint
-import files, re
+from tkinter.ttk import Combobox
+from time import strftime, sleep
+from PIL import ImageTk, Image
+from datetime import datetime
+import phonefiles as files
+import re
 
 class FindMeParkingApp(Tk):
     #class contructor
@@ -96,7 +97,7 @@ class FindMeParkingApp(Tk):
     #this function checks if a user account exists
     def userCheck(self):
         try:
-            with open(f"{files.user_profile}UserProfile.txt","r") as file:
+            with open(f"{files.user_profile}UserProfile1.txt","r") as file:
                 lines = file.readlines()
                 if len(lines) > 0:
                     self.username = lines[0].strip('\n')
@@ -383,7 +384,7 @@ class FindMeParkingApp(Tk):
             s.create_text(int(s.winfo_reqwidth() / 2), 80, text = f'{self.activeLot.ParkingLot_name}', font = ('bold', 20), anchor = "center", tags = 'text')
             s.create_text(int(s.winfo_reqwidth() / 2), 160, text = f'Your parking spot is at {self.mySpot[0]}', font = ('bold', 20), anchor = "center", tags = 'text')
             global distances
-            s.create_text(int(s.winfo_reqwidth() / 2), 520, text =  f'You are {distances[self.distanceAway]}m away', font = ('bold', 13), anchor = "center", tags = 'text')
+            s.create_text(int(s.winfo_reqwidth() / 2), 520, text =  f'You are {self.distanceAway}m away', font = ('bold', 13), anchor = "center", tags = 'text')
             #for the 1st digit in the set range
             if i == 0:
                 #adds some default text to 's', some with stored data
@@ -403,7 +404,7 @@ class FindMeParkingApp(Tk):
                 global gb
                 gb = Button(s, text = btn_text, font = ('bold', 9), fg = "medium blue", bg = "azure", highlightthickness = 0, relief = "flat", justify = "center", activebackground = "azure", activeforeground = "medium blue",)
                 if self.userExists:            
-                    gb.config(command = lambda:  self.toset())
+                    gb.config(command = lambda:  self.changeParkingSpot())
                 else:            
                     gb.config(command = lambda: self.userAccount())
                 gb.place(x = int(s.winfo_reqwidth() / 2) - 60, y = 665, width = 120)
@@ -428,15 +429,39 @@ class FindMeParkingApp(Tk):
                 global bg
                 bg = Button(s, text = btn_text, font = ('bold', 9), fg = "medium blue", bg = "azure", highlightthickness = 0, relief = "flat", justify = "center", activebackground = "azure", activeforeground = "medium blue",)
                 if self.userExists:            
-                    bg.config(command = lambda:  self.toset())
+                    bg.config(command = lambda:  self.changeParkingSpot())
                 else:            
                     bg.config(command = lambda: self.userAccount())
                 bg.place(x = int(s.winfo_reqwidth() / 2) - 60, y = 665, width = 120)
                 #temporary canvas 's' is packed into 'frame'
                 s.pack(fill="both", expand=True, )
                 
-    def toset(self):
-        print("Logged in")
+    def changeParkingSpot(self):
+        #1st: it destroys a few displays that are either:
+        #1. no longer needed
+        #2. going to be recreated
+        try:
+            self.vsb.destroy()
+        except Exception:
+            pass
+        try:
+            self.frame.unbind("<Configure>")
+            self.frame.destroy()
+        except Exception:
+            pass
+        try:
+            self.canvas.unbind_all("<MouseWheel>")
+            self.canvas.unbind_all("<Double-Button-1>")
+            self.canvas.destroy()
+        except Exception:
+            pass
+        try:
+            self.main.destroy()
+        except Exception:
+            pass
+        self.has_activeLot = False
+        self.__checking = 0
+        self.getLotsLoading()
 
     #this function configues 'userLabelButton' if a user exists or not
     def setUserButtonIfUserExists(self):
@@ -445,13 +470,13 @@ class FindMeParkingApp(Tk):
             image = Image.open(files.no_user)
             image = image.resize((50,50), Image.Resampling.LANCZOS)
             self.userLabel_image = ImageTk.PhotoImage(image)
-            self.userLabelButton.config(command = lambda : self.noUserButtonClick(), image = self.userLabel_image,)
-        else:
+            self.userLabelButton.config(command = lambda : self.noUserButtonClick(), image = self.userLabel_image, state = "normal")
+        else: #self.userLabelButton.config( command = lambda : self.closeUserSettings(),)
             #opens 'cat' image, resizes it, and recreates it
             image = Image.open(files.cat)
             image = image.resize((50,50), Image.Resampling.LANCZOS)
             self.userLabel_image = ImageTk.PhotoImage(image)
-            self.userLabelButton.config( command = lambda : self.UserSettings(), image = self.userLabel_image)
+            self.userLabelButton.config( command = lambda : self.UserSettings(), image = self.userLabel_image, state = "normal")
     
     #this function creates a profile button
     def create_userLabelButton(self):
@@ -466,7 +491,7 @@ class FindMeParkingApp(Tk):
     def createMainButton(self):
         self.setActiveScreen(3)
         #'mainCanvas' is decorated
-        #self.decorateCanvas(self.mainCanvas)
+        self.decorateCanvas(self.mainCanvas)
         #create profile button
         self.create_userLabelButton()        
         #creates a main button to get and display available lots and spots
@@ -600,7 +625,7 @@ class FindMeParkingApp(Tk):
                     #if the data in 'passwordEntry' is the same ss the user password
                     if self.passwordEntry.get() == self.password:
                         #Login is Successful
-                        print("Logged IN")
+                        self.userExists = True
                     else:
                         #if username entered != self.username
                         self.empty_Label.config(text = "'Password' invalid", fg = "old lace", bg = "red2")
@@ -1142,7 +1167,6 @@ class FindMeParkingApp(Tk):
                     global username
                     username = self.username
                     self.saveAccountInfo()
-                    print("Complete")
                 else:
                     self.empty_Label.config(text = "'Password' too short", fg = "old lace", bg = "red2")
             else:
@@ -1241,7 +1265,7 @@ class FindMeParkingApp(Tk):
     #this is 1 of 3 times the progress bar will be displayed in this app
     #this function shows a progress bar while setting up to display to
     #assigned parking spot, and entance/exit maps to the user
-    def getLotsLoading(self):
+    def getLotsLoading(self):       
         try:
             self.userPopupLabel.destroy() 
         except Exception:
@@ -1250,9 +1274,20 @@ class FindMeParkingApp(Tk):
             self.noUserPopupLabel.destroy()
         except Exception:
             pass
-        if not self.has_activeLot:            
-            self.getReadingButton.destroy()
-            self.setUserButtonIfUserExists()
+        if not self.has_activeLot:
+            self.mainCanvas.destroy()
+            self.mainCanvas = Canvas(self.labelFrame, width = self.width - 20, height = self.height - 20, bg = "#ffffff")
+            self.mainCanvas.place(x = 0, y = 0)
+            self.decorateCanvas(self.mainCanvas)
+            self.create_userLabelButton()
+            try:      
+                self.getReadingButton.destroy()
+            except Exception:
+                pass
+            try:
+                self.setUserButtonIfUserExists()
+            except Exception:
+                pass
             try:
                 self.noUserPopupLabel.destroy()
             except Exception:
@@ -1291,7 +1326,7 @@ class FindMeParkingApp(Tk):
         #after the scroll event is created, it is then populated with displays, and information
         self.populate()     
 
-    #this function is called to create a scroll event within the app window
+    #this function is called to create a scroll event within the app window 
     def setScroll(self):
         #1st: it destroys a few displays that are either:
         #1. no longer needed
@@ -1426,7 +1461,8 @@ class FindMeParkingApp(Tk):
         except Exception:
             pass
         self.activeLot = lot
-        self.distanceAway = i
+        global distances
+        self.distanceAway = distances[i]
         
         self.has_activeLot = True
         self.checker()
@@ -1441,7 +1477,11 @@ class FindMeParkingApp(Tk):
         try:
             self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
         except Exception:
+            pass
+        try:
             self.mailBoxCanvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        except Exception:
+            pass
 
     #this method selects a parking spot for the user
     def showGivenSpot(self):
@@ -1479,13 +1519,15 @@ class FindMeParkingApp(Tk):
         #creates a ParkinLot object 'exit', using specific parameters 
         exit = ParkingLot(self.activeLot.ParkingLot_mapcontents, self.activeLot.ParkingLot_sides, index, "X", 0, self.mySpot[0],  f"{self.activeLot.path}{self.mySpot[0]}_exit.png", self.activeLot.ParkingLot_number)
         #creates an 'ExitMap' image
-        self.ExitMap =  ImageTk.PhotoImage(exit.output_image().resize(self.newsize, Image.Resampling.LANCZOS))
-        #create entrance map 'mail' item
-        mail = Mail(self.activeLot.ParkingLot_name, self.distanceAway, self.mySpot[0], "Entrance Map", 1, datetime.now(), image = self.EntranceMap)
-        self.inbox.append(mail)
-        #create exit map 'mail' item
-        mail = Mail(self.activeLot.ParkingLot_name, self.distanceAway, self.mySpot[0], "Exit Map", 2, datetime.now(), image = self.ExitMap)
-        self.inbox.append(mail)
+        self.ExitMap = ImageTk.PhotoImage(exit.output_image().resize(self.newsize, Image.Resampling.LANCZOS))
+        #If there is an active user present, send them a confirmation mail
+        if self.userExists:
+            #create entrance map 'mail' item
+            mail = Mail(self.activeLot.ParkingLot_name, self.distanceAway, self.mySpot[0], "Entrance Map", 1, datetime.now(), image = self.EntranceMap)
+            self.inbox.append(mail)
+            #create exit map 'mail' item
+            mail = Mail(self.activeLot.ParkingLot_name, self.distanceAway, self.mySpot[0], "Exit Map", 2, datetime.now(), image = self.ExitMap)
+            self.inbox.append(mail)
 
     #this function sets the boolean for each screen
     def setActiveScreen(self, screenNum):
@@ -1552,39 +1594,49 @@ class FindMeParkingApp(Tk):
         self.mailBoxCanvas.bind("<Double-Button-1>", self.CloseMailnGoBacktoHome)
         
         #self.mailBoxCanvas.create_rectangle(0, 571, 288, 631, outline = "red", width = 2, tags="rectangle")
-        self.dummyMails()
+        #self.dummyMails()
         if len(self.inbox) == 0:
             self.emptyMailBox()
         else:
             self.gotMail()
+
+    #creates a dummy image for the dummy emails    
+    def createDummyImages(self):
+        image = Image.open(r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Monitor/A4_entrance.png")
+        nextimg = image.resize(self.newsize, Image.Resampling.LANCZOS)
+        self.dummyEntImage = ImageTk.PhotoImage(nextimg)
+        image = Image.open(r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Monitor/A4_exit.png")
+        nextimg = image.resize(self.newsize, Image.Resampling.LANCZOS)
+        self.dummyExtImage = ImageTk.PhotoImage(nextimg)
     
     #this function is used to check if 'self.gotMail()' works properly
-    #function is called 7 lines up, and can be commented/uncommented if necessary
+    #function is called 14 lines up, and can be commented/uncommented if necessary
     def dummyMails(self):
-        mail = Mail("First Parking Lot", 100, "A1", "Entrance Map", 1, datetime.now())
+        self.createDummyImages()
+        mail = Mail("First Parking Lot", 100, "A4", "Entrance Map", 1, datetime.now(), self.dummyEntImage)
         self.inbox.append(mail)
-        mail = Mail("First Parking Lot", 100, "A1", "Exit Map", 2, datetime.now())
+        mail = Mail("First Parking Lot", 100, "A4", "Exit Map", 2, datetime.now(), self.dummyExtImage)
         self.inbox.append(mail)
-        mail = Mail("Second Parking Lot", 200, "A2", "Entrance Map", 1, datetime.now())
+        mail = Mail("Second Parking Lot", 200, "A4", "Entrance Map", 1, datetime.now(), self.dummyEntImage)
         self.inbox.append(mail)
-        mail = Mail("Second Parking Lot", 200, "A2", "Exit Map", 2, datetime.now())
+        mail = Mail("Second Parking Lot", 200, "A4", "Exit Map", 2, datetime.now(), self.dummyExtImage)
         self.inbox.append(mail)
-        mail = Mail("Third Parking Lot", 300, "A3", "Entrance Map", 1, datetime.now())
+        mail = Mail("Third Parking Lot", 300, "A4", "Entrance Map", 1, datetime.now(), self.dummyEntImage)
         self.inbox.append(mail)
-        mail = Mail("Third Parking Lot", 300, "A3", "Exit Map", 2, datetime.now())
+        mail = Mail("Third Parking Lot", 300, "A4", "Exit Map", 2, datetime.now(), self.dummyExtImage)
         self.inbox.append(mail)
-        mail = Mail("Fourth Parking Lot", 400, "A4", "Entrance Map", 1, datetime.now())
+        mail = Mail("Fourth Parking Lot", 400, "A4", "Entrance Map", 1, datetime.now(), self.dummyEntImage)
         self.inbox.append(mail)
-        mail = Mail("Fourth Parking Lot", 400, "A4", "Exit Map", 2, datetime.now())
+        mail = Mail("Fourth Parking Lot", 400, "A4", "Exit Map", 2, datetime.now(), self.dummyExtImage)
         self.inbox.append(mail)
             
     #this function is called if the mailbox is empty
     def emptyMailBox(self):
         self.mailBoxCanvas.place(x = 100, y = 100, width = (int(self.mainCanvas.winfo_reqwidth() / 4) * 3) - 7, height = self.mainCanvas.winfo_reqheight() - 103,)
-        self.listbox = Listbox(self.mainCanvas, font = ('bold', 20), bd = 0, highlightthickness = 2, relief = 'ridge', highlightbackground = "black", bg  ="snow2", selectmode = 'browse', activestyle = "dotbox",) 
+        self.listbox = Listbox(self.mainCanvas, font = ('bold', 60), bd = 0, highlightthickness = 2, relief = 'ridge', highlightbackground = "black", bg  ="snow2", selectmode = 'browse', activestyle = "dotbox",) 
         self.listbox.place(x = 2, y = 100, width = int(self.mainCanvas.winfo_reqwidth() / 4) + 3, height = self.mainCanvas.winfo_reqheight() - 103,)
         stop = 0
-        while stop < 80:    
+        while stop < 15:    
             self.listbox.insert(stop, f"",)
             #self.listbox.insert(END,"_ _ _ _")
             if stop % 3 == 0:
@@ -1599,12 +1651,43 @@ class FindMeParkingApp(Tk):
 
     #this function is called when a populated mail is clicked
     def clickedmail(self, i = None, mail = None):
+        popupMail_width = int(self.mainCanvas.winfo_reqwidth() - 12)
+        popupMail_height = int(((self.mainCanvas.winfo_reqheight() / 8) * 7) - 7)
         if i is not None:
-            print(i, mail.header)
-            popupMail = Canvas(self.mainCanvas, bg = "red2")
-            Button(popupMail, text = 'close', relief = "flat", font = ('bold', 12), fg = "red2", activeforeground = "red2", bg = "light cyan", activebackground = "light cyan").place(x = 310, y  = 10)
-            popupMail.place(x = 6, y = 93, width = self.mainCanvas.winfo_reqwidth() - 12, height = int((self.mainCanvas.winfo_reqheight() / 8) * 7) - 7)
-            #popupMail.create_text()
+            if mail.type == 1: #Entrance Map
+                txt1 = 'Please follow this guide map to get to'
+                txt2 = f'{mail.spot} quickly and safely'
+            elif mail.type == 2:
+                txt1 = 'Please follow this guide map to get from'
+                txt2 = f'{mail.spot} to the Exit quickly and safely' 
+            bg = "honeydew4"
+            top_fg = "black"
+            outline = "black"
+            mini_txt = "gray90"
+            popupMail = Canvas(self.mainCanvas, bg = bg, highlightbackground = outline)
+            Button(popupMail, text = 'close', relief = "flat", font = ('bold', 12), fg = "red2", activeforeground = "red2", bg = bg, activebackground = bg, command = popupMail.destroy, bd = 2).place(x = 310, y = 10)
+            headerContain = Label(popupMail, bg = bg)
+            header = Label(headerContain, text = f"Find Me Parking: {mail.header}", font = ('bold', 15), fg = outline, bg = bg)
+            Label(popupMail, text = "F", font = ('bold',30), borderwidth = 2, relief = "solid", ).place(x = 10, y = 50, width = 50, height = 50)
+            Label(popupMail, text = "Find Me Parking", font = ('bold',12), fg = mini_txt, bg = bg).place(x = 65, y = 53)
+            Label(popupMail, text = f'{mail.time.strftime("%b %d")}', font = ('bold',9), fg = mini_txt, bg = bg).place(x = 185, y = 56)
+            Label(popupMail, text = f'to: {self.email}', font = ('bold',10), fg = mini_txt, bg = bg).place(x = 65, y = 71)
+            popupMail.create_rectangle(6, 110, popupMail_width - 6, popupMail_height - 7, outline = outline, width = 2, fill = "gray85", tags="rectangle")
+            #self, lot_name, distance, spot, header, type, time, image
+            popupMail.create_text(int(popupMail_width / 2), 130, text = f'{mail.lot_name}', font = ('bold', 17))
+            popupMail.create_text(int(popupMail_width / 2), 155, text = f'{mail.header}', font = ('bold', 15))
+            popupMail.create_text(int(popupMail_width / 2), 180, text = f'Your parking spot is at {mail.spot}', font = ('bold', 15))
+            image_label = Label(popupMail, bg = bg, image = mail.image)
+            image_label.place(x = int(popupMail_width / 2) - int(image_label.winfo_reqwidth() / 2), y = 200)
+            popupMail.create_text(int(popupMail_width / 2), 520, text = f'You are {mail.distance}m away', font = ('bold', 12))  
+            popupMail.create_text(int(popupMail_width / 2), 540, text = txt1, font = ('bold', 12))
+            popupMail.create_text(int(popupMail_width / 2), 560, text = txt2, font = ('bold', 12))
+            
+            popupMail.create_text(int(popupMail_width / 2), 595, text = f'Not satisfied with this spot?', font = ('bold', 9))
+            popupMail.create_text(int(popupMail_width / 2), 612, text = f'You can change it in the Find Me Parking App', font = ('bold', 9))
+            header.grid(row = 0, column = 0)
+            headerContain.place(x = 8, y = 10)
+            popupMail.place(x = 6, y = 93, width = popupMail_width, height = popupMail_height)
         
     #this function creates a canvas widget to display mail information
     def setEmailCanvas(self, canvas, i = None,):
@@ -1626,13 +1709,13 @@ class FindMeParkingApp(Tk):
         middle.place(x = 80, y = 36)
         footcontainer.place(x = 80, y = 60, width = 285)
         
-        logo.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
-        time.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
-        header.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
-        middle.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
-        footcontainer.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
-        footer.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
-        c.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
+        logo.bind("<ButtonPress-1>", lambda event, a = i, b = self.inbox[i]: self.clickedmail(a, b))
+        time.bind("<ButtonPress-1>", lambda event, a = i, b = self.inbox[i]: self.clickedmail(a, b))
+        header.bind("<ButtonPress-1>", lambda event, a = i, b = self.inbox[i]: self.clickedmail(a, b))
+        middle.bind("<ButtonPress-1>", lambda event, a = i, b = self.inbox[i]: self.clickedmail(a, b))
+        footcontainer.bind("<ButtonPress-1>", lambda event, a = i, b = self.inbox[i]: self.clickedmail(a, b))
+        footer.bind("<ButtonPress-1>", lambda event, a = i, b = self.inbox[i]: self.clickedmail(a, b))
+        c.bind("<ButtonPress-1>", lambda event, a = i, b = self.inbox[i]: self.clickedmail(a, b))
         
         if i % 3 == 0:
             logo.configure(bg = 'azure3')
@@ -1664,16 +1747,14 @@ class FindMeParkingApp(Tk):
             self.listbox.destroy()
         except Exception:
             pass
-        print(f"Length of inbox: {len(self.inbox)}")
         stop = 0
         
         self.mailBoxCanvas.place(x = 2, y = 100, width = self.mainCanvas.winfo_reqwidth() - 4, height = self.mainCanvas.winfo_reqheight() - 103,)
         
         self.mailScroll()
-        
-        while stop < (len(self.inbox) + 12):
+        while stop < (len(self.inbox) + 8):
             if stop <= len(self.inbox) - 1:
-                email_thumbnail = self.setEmailCanvas(self.frame, stop)                
+                email_thumbnail = self.setEmailCanvas(self.frame, (len(self.inbox) - 1) - stop)                
                 email_thumbnail.grid(row = stop, column = 0,)
             else:
                 pass

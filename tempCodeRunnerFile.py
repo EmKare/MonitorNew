@@ -1,1 +1,0 @@
-strftime('%h %d, %Y\n%I:%M:%S %p')
