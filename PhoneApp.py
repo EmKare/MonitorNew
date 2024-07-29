@@ -1602,10 +1602,10 @@ class FindMeParkingApp(Tk):
 
     #creates a dummy image for the dummy emails    
     def createDummyImages(self):
-        image = Image.open(r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Monitor/A4_entrance.png")
+        image = Image.open(files.dummy_entrance_image)
         nextimg = image.resize(self.newsize, Image.Resampling.LANCZOS)
         self.dummyEntImage = ImageTk.PhotoImage(nextimg)
-        image = Image.open(r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Monitor/A4_exit.png")
+        image = Image.open(files.dummy_exit_image)
         nextimg = image.resize(self.newsize, Image.Resampling.LANCZOS)
         self.dummyExtImage = ImageTk.PhotoImage(nextimg)
     
