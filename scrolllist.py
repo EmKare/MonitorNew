@@ -62,7 +62,7 @@ label.place(x = 80, y = 30,width=500,height=30,)
 #for values in sides: 
 #	listbox.insert(END, values[0])
  
-for values in range(2): 
+for values in range(200): 
     listbox.insert(END, values)
 	
 # Attaching Listbox to Scrollbar 

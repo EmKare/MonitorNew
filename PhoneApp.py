@@ -1,11 +1,11 @@
-from tkinter import Tk, ttk, Button, LabelFrame, Canvas, Label, NW, \
-Scrollbar, RIGHT, LEFT, BOTH, Y, Listbox, END, Entry, font
+from tkinter import Tk, ttk, Button, LabelFrame, Canvas, Scrollbar,\
+Listbox, Label, Entry, Frame, font, NW, RIGHT, LEFT, BOTH, Y, END
 from getParkingLot import GetLot, ParkingLotInfo
+from datetime import datetime
+from time import strftime, sleep
 from tkinter.ttk import Combobox
 from PIL import ImageTk, Image
-from Parking import ParkingLot
-from random import choice
-from time import strftime
+from random import choice, randint
 import files, re
 
 class FindMeParkingApp(Tk):
@@ -15,21 +15,31 @@ class FindMeParkingApp(Tk):
         #set window width and height
         self.width, self.height = 400, 750
         #set window geometry, along with window placement
-        self.geometry(f'{self.width}x{self.height}+10+10')
+        self.geometry(f'{self.width}x{self.height}+1120+0')
         #window cannot be resized
         self.resizable(False, False)
         self.title("Find Me Parking App")
         self.count, self.unbindEvent = 1, 0
         self.__checking = 0
+        self.userExists = False
+        self.distanceAway = None
+        
+        self.homeScreen_bool = False
+        self.apLoadingScreen_bool = False
+        self.appMainScreen_bool = False        
+        self.gettingLotsScreen_bool = False
+        self.displayingLotsScreen_bool = False
+        self.gettingSpotScreen_bool = False
+        self.displayingSpotScreen_bool = False
         
         #User information: this could be placed in 
         #a 'User' class in the future
         self.gender = None
         self.fname, self.lname, self.email = "", "", ""
-        self.phone, self.card = 0, 0, 
+        self.phone, self.card = 0, 0,
         self.cvv, self.id = "", ""
         self.exp_month, self.exp_year = None, None
-        self.username, self.password = "", "" 
+        self.username, self.password = "", ""
         #list with month numbers for card expiration date     
         self.months = ["01","02","03","04","05","06","07","08","09","10","11","12"]
         
@@ -58,7 +68,7 @@ class FindMeParkingApp(Tk):
         username = ""
         
         #demo email, to be removed
-        self.userEmail = 'user@mail.com'
+        self.demoEmail = 'user@mail.com'
         #how many unread mails are in the user inbox
         self.unreadMail = 0
         #user inbox
@@ -74,24 +84,53 @@ class FindMeParkingApp(Tk):
         #size for parking lot company logo images 
         self.newsize = (350, 300)
         #frame that surrounds working area
-        self.labelFrame = LabelFrame(self, width = self.width-10, height = self.height-10)
+        self.labelFrame = LabelFrame(self, width = self.width - 10, height = self.height - 10)
         self.labelFrame.place(x = 5, y = 5)
-        
-        #self.__getLotSpotsStatuses = []        
-        #self.getSpots()
-        self.homePage()        
-                
+        #checks if user already exists
+        self.userCheck()
+        #calls 'homePage' function
+        self.homePage()
+        #calls the tkinter 'mainloop' function to start app
         self.mainloop()
 
-    #this methos creates a canvas called 'mainCanvas' and places it with the labelframe
+    #this function checks if a user account exists
+    def userCheck(self):
+        try:
+            with open(f"{files.user_profile}UserProfile.txt","r") as file:
+                lines = file.readlines()
+                if len(lines) > 0:
+                    self.username = lines[0].strip('\n')
+                    self.password = lines[1].strip('\n')
+                    self.gender = lines[2].strip('\n')
+                    self.fname = lines[3].strip('\n')
+                    self.lname = lines[4].strip('\n')
+                    self.email = lines[5].strip('\n')
+                    self.phone = int(lines[6].strip('\n'))
+                    self.id = lines[7].strip('\n')
+                    self.card = int(lines[8].strip('\n'))
+                    self.cvv = lines[9].strip('\n')
+                    self.exp_month = lines[10].strip('\n')
+                    self.exp_year = lines[11].strip('\n')
+                    self.userExists = True
+                # else:
+                    pass
+        except:
+            pass
+
+    #this function sets a canvas window and a the homescreen image
     def homePage(self):
+        self.create_mainCanvas()
+        self.addImageToHome()
+        
+    #this methos creates a canvas called 'mainCanvas' and places it with the labelframe
+    def create_mainCanvas(self):
         self.mainCanvas = Canvas(self.labelFrame, width = self.width - 20, height = self.height - 20, bg = "#ffffff")
         self.mainCanvas.place(x = 0, y = 0)
-        self.addImageToHome()
 
     #this method adds the phone screen image to 'mainCanvas', and binds a function to
     #'mainCanvas' while also unbinding a seperate function from it
     def addImageToHome(self):
+        self.setActiveScreen(1)
         #uses PIL to open image
         image = Image.open(files.app_screen)
         #creates a image suitable for the tkinter library
@@ -127,8 +166,7 @@ class FindMeParkingApp(Tk):
                 self.mail()
 
     #this function checks where on 'mainCanvas' the mouse was clicked twice (event)
-    #and if the event happened in a certain region, certain specific action
-    #would take place
+    #and if the event happened in a certain region, certain specific action would take place
     #note: this event will not work on the home screen  
     def backtoHome(self, event):
         if self.unbindEvent == 1:
@@ -159,48 +197,94 @@ class FindMeParkingApp(Tk):
                 self.canvas.delete("text")
             except Exception:
                 pass
-            self.count = 1
-            
+            self.count = 1            
             #adds some text to 'mainCanvas', including the group name at the end of the window
             self.mainCanvas.create_text(200, 150, text = 'Capstone Group 3', font = ('bold', 20), anchor = "center", tags = 'text')
             self.mainCanvas.create_rectangle(3, 3, 381, 731, outline = "black", width = 2, tags="rectangle")
             self.mainCanvas.create_text(375, self.height - 32, text = 'Capstone Group 3', font = ('bold', 6), anchor = "ne", tags = 'group')
             #calls the after method for app loading screen
+            self.setActiveScreen(2)
             self.mainCanvas.after(300, self.addImages)
         else:
             #decorates the canvas
-            self.decorateCanvas()
+            self.decorateCanvas(self.mainCanvas)
             #displays already assigned parking spot
             self.displayParkingSpotInformation()
 
-    #this function decorates the canvas using different coloured triangles, and a circle,
+    #this function is called to animate loading screen
+    def create_Shape(self, image,):
+        if image == 0:
+            self.mainCanvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="circle")
+        if image == 1:
+            self.mainCanvas.create_rectangle(3, 3, 381, 731, outline = "black", width = 2, tags="rectangle")
+            self.mainCanvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="circle")
+        elif image == 2:
+            self.mainCanvas.create_polygon([4, 4, (self.width - 20)/2, self.height-20, 4, self.height-20], fill='light sea green', tags="shapes")
+            self.mainCanvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="circle")
+        elif image == 3:
+            self.mainCanvas.create_polygon([4, 4, (self.width - 20), self.height-20 ,(self.width - 20)/2 , self.height-20], fill='spring green', tags="shapes")
+            self.mainCanvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="circle")
+        elif image == 4:
+            self.mainCanvas.create_polygon([4, 4, (self.width - 20), ((self.height - 20) / 3) * 2, (self.width - 20), self.height-20], fill='medium spring green', tags="shapes")
+            self.mainCanvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="circle")
+        elif image == 5:
+            self.mainCanvas.create_polygon([4, 4, (self.width - 20), (self.height - 20) / 3, (self.width - 20), ((self.height - 20) / 3) * 2], fill='aquamarine', tags="shapes")
+            self.mainCanvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="circle")
+        elif image == 6:
+            self.mainCanvas.create_polygon([4, 4, (self.width - 20), ((self.height - 20) / 3) / 2, (self.width - 20), (self.height - 20) / 3], fill='SpringGreen2', tags="shapes")
+            self.mainCanvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="circle")
+        elif image == 7:
+            self.mainCanvas.create_polygon([4, 4, (self.width - 20), (((self.height - 20) / 3) / 2) / 2, (self.width - 20), ((self.height - 20) / 3) / 2], fill='PaleGreen1', tags="shapes")
+            self.mainCanvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="circle")
+        elif image == 8:
+            self.mainCanvas.create_polygon([4, 4, (self.width - 20), 4, (self.width - 20), (((self.height - 20) / 3) / 2) / 2], fill='azure', tags="shapes")
+            self.mainCanvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="circle")
+        else:
+            self.mainCanvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="circle")
+            
+    #this function decorates the canvas parameter using different coloured triangles, and a circle,
     #and displays the group name at the end of the window
-    def decorateCanvas(self):
-        self.mainCanvas.create_rectangle(3, 3, 381, 731, outline = "black", width = 2, tags="rectangle")
-        self.mainCanvas.create_polygon([4, 4, (self.width - 20)/2, self.height-20, 4, self.height-20], fill='light sea green', tags="shapes")
-        self.mainCanvas.create_polygon([4, 4, (self.width - 20), self.height-20 ,(self.width - 20)/2 , self.height-20], fill='spring green', tags="shapes")
-        self.mainCanvas.create_polygon([4, 4, (self.width - 20), ((self.height - 20) / 3) * 2, (self.width - 20), self.height-20], fill='medium spring green', tags="shapes")
-        self.mainCanvas.create_polygon([4, 4, (self.width - 20), (self.height - 20) / 3, (self.width - 20), ((self.height - 20) / 3) * 2], fill='aquamarine', tags="shapes")
-        self.mainCanvas.create_polygon([4, 4, (self.width - 20), ((self.height - 20) / 3) / 2, (self.width - 20), (self.height - 20) / 3], fill='SpringGreen2', tags="shapes")
-        self.mainCanvas.create_polygon([4, 4, (self.width - 20), (((self.height - 20) / 3) / 2) / 2, (self.width - 20), ((self.height - 20) / 3) / 2], fill='PaleGreen1', tags="shapes")
-        self.mainCanvas.create_polygon([4, 4, (self.width - 20), 4, (self.width - 20), (((self.height - 20) / 3) / 2) / 2], fill='azure', tags="shapes")
-        self.mainCanvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="shapes")
-        self.mainCanvas.create_text(375, self.height - 32, text = 'Capstone Group 3', font = ('bold', 6), anchor = "ne", tags = 'group') 
+    def decorateCanvas(self, canvas):
+        canvas.create_rectangle(3, 3, 381, 731, outline = "black", width = 2, tags="rectangle")
+        canvas.create_polygon([4, 4, (self.width - 20)/2, self.height-20, 4, self.height-20], fill='light sea green', tags="shapes")
+        canvas.create_polygon([4, 4, (self.width - 20), self.height-20 ,(self.width - 20)/2 , self.height-20], fill='spring green', tags="shapes")
+        canvas.create_polygon([4, 4, (self.width - 20), ((self.height - 20) / 3) * 2, (self.width - 20), self.height-20], fill='medium spring green', tags="shapes")
+        canvas.create_polygon([4, 4, (self.width - 20), (self.height - 20) / 3, (self.width - 20), ((self.height - 20) / 3) * 2], fill='aquamarine', tags="shapes")
+        canvas.create_polygon([4, 4, (self.width - 20), ((self.height - 20) / 3) / 2, (self.width - 20), (self.height - 20) / 3], fill='SpringGreen2', tags="shapes")
+        canvas.create_polygon([4, 4, (self.width - 20), (((self.height - 20) / 3) / 2) / 2, (self.width - 20), ((self.height - 20) / 3) / 2], fill='PaleGreen1', tags="shapes")
+        canvas.create_polygon([4, 4, (self.width - 20), 4, (self.width - 20), (((self.height - 20) / 3) / 2) / 2], fill='azure', tags="shapes")
+        canvas.create_oval(0-30,0-30,0+80,0+80, fill = "yellow2", tags="shapes")
+        canvas.create_text(375, self.height - 32, text = 'Capstone Group 3', font = ('bold', 6), anchor = "ne", tags = 'group') 
 
     #this function displays images from a folder in sequence
     #to simulate a loading animation
     def addImages(self):
         #imports the sleep function from the 'time' library 
-        from time import sleep
         if self.count <= 12:      
             try:
                 #deletes all elements from 'mainCanvas' with the "loading_image" tag
-                self.canvas.delete("loading_image")
+                self.mainCanvas.delete("loading_image") 
             except Exception:
                 pass
+            try:
+                #deletes all elements from 'mainCanvas' with the "loading_image" tag
+                self.mainCanvas.delete('group')
+            except Exception:
+                pass
+            try:
+                #deletes all elements from 'mainCanvas' with the "loading_image" tag
+                self.mainCanvas.delete('circle')
+            except Exception:
+                pass
+            #--------
+            self.create_Shape(self.count - 1)
+            #-------------
+            self.mainCanvas.create_text(200, 150, text = 'Capstone Group 3', font = ('bold', 20), anchor = "center", tags = 'text')
+            self.mainCanvas.create_text(375, self.height - 32, text = 'Capstone Group 3', font = ('bold', 6), anchor = "ne", tags = 'group')
             #loads, creates and displays an image on 'mainCanvas'
             loading_image = Image.open(files.loading_gif+f'{self.count}.png')
             self.loading_image = ImageTk.PhotoImage(loading_image)
+            
             self.mainCanvas.create_image(100, 320, image = self.loading_image, anchor = NW, tags = "loading_image")
             #increments the count             
             self.count += 1
@@ -212,11 +296,19 @@ class FindMeParkingApp(Tk):
             #deletes all elements from 'mainCanvas' with the "loading_image" and "text' tags
             try:
                 self.mainCanvas.delete("loading_image")
+            except Exception:
+                pass
+            try:
                 self.mainCanvas.delete("text")
             except Exception:
                 pass
+            #try:
+            #    self.mainCanvas.delete("shapes")
+            #except Exception:
+            #    pass
+                        
             #calls 'createMainButton' function
-            self.createMainButton()
+            self.createMainButton()                
 
     #this is 1 of 3 times the progress bar will be displayed in this app
     def setProgressBar(self):
@@ -259,9 +351,9 @@ class FindMeParkingApp(Tk):
                 self.checkAvailability()
             if self.route == 3:
                 self.mainCanvas.delete("text")
-                self.p.destroy()
-                #self.close_resetAll
-                self.changeImage_Login()                    
+                self.p.destroy()                
+                self.userExists = True
+                self.checkWhichScreenIWasOn()
         else:
             #function calls itself
             self.p.after(1000, self.loading)
@@ -270,66 +362,118 @@ class FindMeParkingApp(Tk):
     #or the recently generated parking spot
     #note: both buttons created call the same function
     def displayParkingSpotInformation(self):
+        self.setActiveScreen(7)
         #this function is called to make 'mainCanvas' scrollable
         self.setScroll()
-        
+        if self.userExists:            
+            text_1 = 'Not satisfied with this spot?'
+            text_2 = 'Click below to change'
+            btn_text = "Change Spot"
+        else:            
+            text_1 = 'To get live updates on parking changes'
+            text_2 = 'and mail notification, plus other benefits,'
+            btn_text = "Login/Signup here"
+
         #range is 2 seeing that there are ony 2 images to display
         for i in range(2):
-            #creates a temporary canvas 'c'
-            c = Canvas(self.frame, bg="azure", width=self.mainCanvas.winfo_reqwidth() - 10, height=self.mainCanvas.winfo_reqheight() - 5, )
-            #adds some default text to 'c', with stored data
-            c.create_text(int((self.width - 20) / 2), 80, text = f'{self.activeLot.ParkingLot_name}', font = ('bold', 20), anchor = "center", tags = 'text')
-            c.create_text(int((self.width - 20) / 2), 160, text = f'Your parking spot is at {self.mySpot[0]}', font = ('bold', 20), anchor = "center", tags = 'text')
+            #creates a temporary canvas 's'
+            global s
+            s = Canvas(self.frame, bg="azure", width=self.mainCanvas.winfo_reqwidth() - 10, height=self.mainCanvas.winfo_reqheight() - 5, )
+            #adds some default text to 's', with stored data
+            s.create_text(int(s.winfo_reqwidth() / 2), 80, text = f'{self.activeLot.ParkingLot_name}', font = ('bold', 20), anchor = "center", tags = 'text')
+            s.create_text(int(s.winfo_reqwidth() / 2), 160, text = f'Your parking spot is at {self.mySpot[0]}', font = ('bold', 20), anchor = "center", tags = 'text')
+            global distances
+            s.create_text(int(s.winfo_reqwidth() / 2), 520, text =  f'You are {distances[self.distanceAway]}m away', font = ('bold', 13), anchor = "center", tags = 'text')
             #for the 1st digit in the set range
             if i == 0:
-                #adds some default text to 'c', some with stored data
-                c.create_text(int(c.winfo_reqwidth()/2), 120, text = f"Entrance Map", font = ('bold', 20), anchor = "center", tags = 'text')
+                #adds some default text to 's', some with stored data
+                s.create_text(int(s.winfo_reqwidth()/2), 120, text = f"Entrance Map", font = ('bold', 20), anchor = "center", tags = 'text')
+                #creates and places a button 'back' within 's', to back to previous window
+                back = Button(s, text = "BACK", font = ('bold',15), highlightthickness = 0, relief = "flat", borderwidth = 0, bg = "alice blue", fg = "black", justify = "center", command = lambda : self.goback(0))
+                back.place(x = 10, y = 10, width = 90, height = 30,)
                 #creates a temporary label 'l', and adds the map entrance image to it
-                l = Label(c, bg = "PaleTurquoise2", image=self.EntranceMap)
-                l.place(x = int(c.winfo_reqwidth()/2) - int(l.winfo_reqwidth()/2), y = 200, )
-                c.create_text(int((self.width - 20) / 2), 540, text =  'Please follow this guide map to get to', font = ('bold', 16), anchor = "center", tags = 'text')
-                c.create_text(int((self.width - 20) / 2), 570, text = f'{self.mySpot[0]} quickly and safely', font = ('bold', 16), anchor = "center", tags = 'text')
-                c.create_text(int((self.width - 20) / 2), 640, text = '  To get live updates on parking changes', font = ('bold', 9), anchor = "center", tags = 'text')
-                c.create_text(int((self.width - 20) / 2), 657, text = 'and mail notification, plus other benefits,', font = ('bold', 9), anchor = "center", tags = 'text')
+                l = Label(s, bg = "PaleTurquoise2", image=self.EntranceMap)
+                l.place(x = int(s.winfo_reqwidth()/2) - int(l.winfo_reqwidth()/2), y = 190, )
+                s.create_text(int(s.winfo_reqwidth() / 2), 550, text =  'Please follow this guide map to get to', font = ('bold', 16), anchor = "center", tags = 'text')
+                s.create_text(int(s.winfo_reqwidth() / 2), 580, text = f'{self.mySpot[0]} quickly and safely', font = ('bold', 16), anchor = "center", tags = 'text')
+                #modified text
+                s.create_text(int(s.winfo_reqwidth() / 2), 640, text = text_1, font = ('bold', 9), anchor = "center", tags = 'text')
+                s.create_text(int(s.winfo_reqwidth() / 2), 657, text = text_2, font = ('bold', 9), anchor = "center", tags = 'text')                
                 #creates a temporary button 'gb', which is also made global
                 global gb
-                gb = Button(c, text = 'Login/Signup here', font = ('bold', 9), fg = "medium blue", bg = "azure", highlightthickness = 0, relief = "flat", justify = "center", activebackground = "azure", activeforeground = "medium blue", command = lambda: self.userAccount())
-                gb.place(x = int((self.width - 20) / 2) - 60, y = 665)
-                #temporary canvas 'c' is packed into 'frame'
-                c.pack(fill="both", expand=True, )
+                gb = Button(s, text = btn_text, font = ('bold', 9), fg = "medium blue", bg = "azure", highlightthickness = 0, relief = "flat", justify = "center", activebackground = "azure", activeforeground = "medium blue",)
+                if self.userExists:            
+                    gb.config(command = lambda:  self.toset())
+                else:            
+                    gb.config(command = lambda: self.userAccount())
+                gb.place(x = int(s.winfo_reqwidth() / 2) - 60, y = 665, width = 120)
+                #temporary canvas 's' is packed into 'frame'
+                s.pack(fill="both", expand=True, )
             #for the 1st digit in the set range
             elif i == 1:
-                #adds some default text to 'c', some with stored dat
-                c.create_text(int(c.winfo_reqwidth()/2), 120, text = f"Exit Map", font = ('bold', 20), anchor = "center", tags = 'text')
+                #adds some default text to 's', some with stored dat
+                s.create_text(int(s.winfo_reqwidth()/2), 120, text = f"Exit Map", font = ('bold', 20), anchor = "center", tags = 'text')
+                #creates and places a button 'back' within 's', to back to previous window
+                back = Button(s, text = "BACK", font = ('bold',15), highlightthickness = 0, relief = "flat", borderwidth = 0, bg = "alice blue", fg = "black", justify = "center", command = lambda : self.goback(0))
+                back.place(x = 10, y = 10, width = 90, height = 30,)
                 #creates a temporary label 'l', and adds the map exit image to it
-                l = Label(c, bg = "PaleTurquoise2", image=self.ExitMap)
-                l.place(x = int(c.winfo_reqwidth()/2) - int(l.winfo_reqwidth()/2), y = 200, )
-                c.create_text(int((self.width - 20) / 2), 540, text =  'Please follow this guide map to get from', font = ('bold', 16), anchor = "center", tags = 'text')
-                c.create_text(int((self.width - 20) / 2), 570, text = f'{self.mySpot[0]} to the Exit quickly and safely', font = ('bold', 16), anchor = "center", tags = 'text')
-                c.create_text(int((self.width - 20) / 2), 640, text = '  To get live updates on parking changes', font = ('bold', 9), anchor = "center", tags = 'text')
-                c.create_text(int((self.width - 20) / 2), 657, text = 'and mail notification, plus other benefits,', font = ('bold', 9), anchor = "center", tags = 'text')
+                l = Label(s, bg = "PaleTurquoise2", image=self.ExitMap)
+                l.place(x = int(s.winfo_reqwidth()/2) - int(l.winfo_reqwidth()/2), y = 190, )
+                s.create_text(int(s.winfo_reqwidth() / 2), 550, text =  'Please follow this guide map to get from', font = ('bold', 16), anchor = "center", tags = 'text')
+                s.create_text(int(s.winfo_reqwidth() / 2), 580, text = f'{self.mySpot[0]} to the Exit quickly and safely', font = ('bold', 16), anchor = "center", tags = 'text')
+                #modified text
+                s.create_text(int(s.winfo_reqwidth() / 2), 640, text = text_1, font = ('bold', 9), anchor = "center", tags = 'text')
+                s.create_text(int(s.winfo_reqwidth() / 2), 657, text = text_2, font = ('bold', 9), anchor = "center", tags = 'text')
                 #creates a temporary button 'bg', which is also made global
                 global bg
-                bg = Button(c, text = 'Login/Signup here', font = ('bold', 9), fg = "medium blue", bg = "azure", highlightthickness = 0, relief = "flat", justify = "center", activebackground = "azure", activeforeground = "medium blue", command = lambda: self.userAccount())
-                bg.place(x = int((self.width - 20) / 2) - 60, y = 665)
-                #temporary canvas 'c' is packed into 'frame'
-                c.pack(fill="both", expand=True, )
+                bg = Button(s, text = btn_text, font = ('bold', 9), fg = "medium blue", bg = "azure", highlightthickness = 0, relief = "flat", justify = "center", activebackground = "azure", activeforeground = "medium blue",)
+                if self.userExists:            
+                    bg.config(command = lambda:  self.toset())
+                else:            
+                    bg.config(command = lambda: self.userAccount())
+                bg.place(x = int(s.winfo_reqwidth() / 2) - 60, y = 665, width = 120)
+                #temporary canvas 's' is packed into 'frame'
+                s.pack(fill="both", expand=True, )
+                
+    def toset(self):
+        print("Logged in")
+
+    #this function configues 'userLabelButton' if a user exists or not
+    def setUserButtonIfUserExists(self):
+        if self.userExists is False:
+            #opens 'no user' image, resizes it, and recreates it
+            image = Image.open(files.no_user)
+            image = image.resize((50,50), Image.Resampling.LANCZOS)
+            self.userLabel_image = ImageTk.PhotoImage(image)
+            self.userLabelButton.config(command = lambda : self.noUserButtonClick(), image = self.userLabel_image,)
+        else:
+            #opens 'cat' image, resizes it, and recreates it
+            image = Image.open(files.cat)
+            image = image.resize((50,50), Image.Resampling.LANCZOS)
+            self.userLabel_image = ImageTk.PhotoImage(image)
+            self.userLabelButton.config( command = lambda : self.UserSettings(), image = self.userLabel_image)
+    
+    #this function creates a profile button
+    def create_userLabelButton(self):
+        #the 'no user' or 'cat' image is added to this 'userLabelButton' button 
+        self.userLabelButton = Button(self.mainCanvas, bg = "white", highlightthickness=0, relief="flat", borderwidth=0, )
+        #reconfigures 'userLabelButton' if a user profile exists
+        self.setUserButtonIfUserExists()
+        #'userLabelButton' button is placed with 'mainCanvas'
+        self.userLabelButton.place(x = self.mainCanvas.winfo_reqwidth() - self.userLabelButton.winfo_reqwidth() - 4, y = 4,)
 
     #this function creates 2 buttons for the app home screen
     def createMainButton(self):
+        self.setActiveScreen(3)
         #'mainCanvas' is decorated
-        self.decorateCanvas()
-        #opens 'no user' image, resizes it, and recreates it
-        image = Image.open(files.no_user)
-        image = image.resize((50,50), Image.Resampling.LANCZOS)
-        self.userLabel_image = ImageTk.PhotoImage(image)
-        #the 'no user' image is added to this 'userLabelButton' button 
-        self.userLabelButton = Button(self.mainCanvas, bg = "white",image = self.userLabel_image, highlightthickness=0, relief="flat", borderwidth=0, command = lambda : self.noUserButtonClick())
-        self.userLabelButton.place(x = self.mainCanvas.winfo_reqwidth() - self.userLabelButton.winfo_reqwidth() - 4, y = 4,)
+        #self.decorateCanvas(self.mainCanvas)
+        #create profile button
+        self.create_userLabelButton()        
         #creates a main button to get and display available lots and spots
         self.getReadingButton = Button(self.mainCanvas, bg = "forest green", fg = "white", command = lambda: self.getLotsLoading(), highlightthickness=0, relief="flat", borderwidth=0, text = "Find Me Parking", font = ('bold', 20), activebackground = "lightgreen", activeforeground = "white")
         self.getReadingButton.config(width = 15, height = 2)
-        self.getReadingButton.place(x = int((self.width) / 2) - int(self.getReadingButton.winfo_reqwidth() / 2), y = int((self.height - 100) / 2)-10)
+        self.getReadingButton.place(x = int((self.width) / 2) - int(self.getReadingButton.winfo_reqwidth() / 2), y = int((self.height - 100) / 2) - 10)
+        self.mainCanvas.bind("<Double-Button-1>", self.backtoHome)
 
     #this function is called when 'userLabelButton' is initially clicked
     def noUserButtonClick(self):
@@ -340,10 +484,8 @@ class FindMeParkingApp(Tk):
         self.noUserPopupLabel = Canvas(self.mainCanvas, bg = "spring green", highlightbackground="gray40")
         self.noUserPopupLabel.create_text(65,20,font = ('bold', 10), text = "Log In or Sign Up\nfor added features",)
         self.noUserPopupLabel.place(x = int(self.mainCanvas.winfo_reqwidth() /2), y = 20, width = 130, height = 65)
-        self.noUserPopupLabelButton = Button(self.noUserPopupLabel, bg = "forest green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "Get More", fg = "gray16", activebackground="forest green", activeforeground="gray16", command = lambda: self.confirmRegistration())
-        #activeforeground="gray16", command = lambda: self.RegistrationScreen1())
-        #activeforeground="gray16", command = lambda: self.RegistrationScreen2())
-        #activeforeground="gray16", command = lambda: self.RegistrationScreen3())
+        self.noUserPopupLabelButton = Button(self.noUserPopupLabel, bg = "forest green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "Get More", fg = "gray16", activebackground="forest green", 
+        activeforeground="gray16", command = lambda: self.userAccount())
         self.noUserPopupLabelButton.place(x = 35, y = 40, width = 60)
     
     #this function is called once 'userLabelButton' is clicked
@@ -374,12 +516,33 @@ class FindMeParkingApp(Tk):
                 self.userLabelButton.config(state = "disabled")
             except Exception:
                 pass
+            try:
+                self.frame.unbind("<Configure>")#, self.onFrameConfigure)
+            except Exception:
+                pass
+            try:
+                self.canvas.unbind_all("<MouseWheel>")#, self._on_mousewheel)
+            except Exception:
+                pass
             #creates a rectange image to blur out the background
             #note: this function uses '**kwargs'. all values that are not of type int
             #will be added to '**kwargs'; it act's like a tuple/set
-            self.create_rectangle(2,2, 382, 731, fill='snow', alpha=.6, tags = "blur")
+            try:
+                self.create_rectangle(self.mainCanvas,2,2, 382, 731, fill='snow', alpha=.6, tags = "blur")
+            except Exception:
+                pass
+            global s
+            try:
+                self.create_rectangle(s,2,2, 382, 731, fill='snow', alpha=.6, tags = "blur")
+            except Exception:
+                pass
+            #self.mainCanvas.create_rectangle(3, 3, 381, 731, outline = "black", width = 2, tags="blur",fill="snow")
             #calls 'LoginScreen' function
             self.LoginScreen()
+            #self.RegistrationScreen1()
+            #self.RegistrationScreen2()
+            #self.RegistrationScreen3()
+            #self.confirmRegistration()
 
     #this function creates a login screen above 'mainCanvas', by creating some text,
     #a few Entry and Button elements, and also a Label element.
@@ -404,7 +567,7 @@ class FindMeParkingApp(Tk):
         self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 70, text = "Login", font = ('bold', 30), justify = "center", fill = "medium blue", tags = "login")
         
         self.userAccountCanvas.create_text(100, 170, text = "Username", font = ('bold', 23), justify = "left", fill = "medium blue", tags = "login")
-        self.usernameEntry = Entry(self.userAccountCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',15), justify = "left")
+        self.usernameEntry = Entry(self.userAccountCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',15), justify = "center")
         global username
         if len(username) != 0:
             self.usernameEntry.insert(0, username)
@@ -414,7 +577,7 @@ class FindMeParkingApp(Tk):
         self.passwordEntry = Entry(self.userAccountCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',15), justify = "center", show = "\u2022",)
         self.passwordEntry.place(x = 20, y = 370, width = self.userAccountCanvas.winfo_reqwidth() - 40, height = 40)
         
-        self.login_Button = Button(self.userAccountCanvas, text = "Login", font = ('bold',20), fg = "blue", highlightthickness = 0,  bd = 0, relief = "flat")
+        self.login_Button = Button(self.userAccountCanvas, text = "Login", font = ('bold',20), fg = "blue", highlightthickness = 0,  bd = 0, relief = "flat", command = lambda : self.userLogin())
         self.login_Button.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - 70, y = 460, width = 140, height = 50)
     
         self.userAccountCanvas.create_text(120, 550, text = "Don't have an account?", font = ('bold', 10), justify = "left", fill = "cornflower blue", tags = "login")
@@ -422,14 +585,113 @@ class FindMeParkingApp(Tk):
         self.register_Button = Button(self.userAccountCanvas, text = "Register", font = ('bold',10), fg = "red", highlightthickness = 0,  bd = 0, relief = "flat", command = lambda: self.RegistrationScreen1())
         self.register_Button.place(x = 195, y = 540, width = 60, height = 25)
         
+        self.usernameEntry.bind("<FocusIn>", self.clearLabel)
+        self.passwordEntry.bind("<FocusIn>", self.clearLabel)
         self.userAccountCanvas.bind("<ButtonPress-1>", self.clearLabel)
+    
+    #this function is called when a user is trying to log in 
+    def userLogin(self):
+        #if 'usernameEntry' is not blank 
+        if len(self.usernameEntry.get()) != 0:
+            #if 'passwordEntry' is not blank
+            if len(self.passwordEntry.get()) != 0:
+                #if the data in 'usernameEntry' is the same ss the user password
+                if self.usernameEntry.get() == self.username:
+                    #if the data in 'passwordEntry' is the same ss the user password
+                    if self.passwordEntry.get() == self.password:
+                        #Login is Successful
+                        print("Logged IN")
+                    else:
+                        #if username entered != self.username
+                        self.empty_Label.config(text = "'Password' invalid", fg = "old lace", bg = "red2")
+                else:
+                    #if username entered != self.username
+                    self.empty_Label.config(text = "'Username' invalid", fg = "old lace", bg = "red2")
+            else:
+                #if 'passwordEntry' is blank
+                self.empty_Label.config(text = "'Password' is blank", fg = "old lace", bg = "red2")
+        else:
+            #if 'usernameEntry' is blank
+            self.empty_Label.config(text = "'Username' is blank", fg = "old lace", bg = "red2")
+        try:
+            self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
+        except Exception:
+            pass        
+        self.login_confirm() 
+    
+    def login_confirm(self):
+        self.mini_mainCanvas()
+        
+        self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 60, text = "Logging In", font = ('bold',30), tags = "text",)
+        
+        self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 200, text = "Login may take a couple seconds", font = ('bold', 9), justify = "center", fill = "black", tags = "register")
+        self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 215, text = "Please be patient", font = ('bold', 9), justify = "center", fill = "black", tags = "register")
+        
+        self.p = ttk.Progressbar(self.userAccountCanvas, orient="horizontal", length=200, mode="determinate",takefocus=True, maximum=100,)
+        self.p['value'] = 0
+        self.p.place(x = int((self.userAccountCanvas.winfo_reqwidth()) / 2), y = 140, anchor = "center",)
+        self.route = 3
+        self.after(1000, self.loading)
+        
+    def checkWhichScreenIWasOn(self): #393
+        try:
+            self.getReadingButton.config(state = "normal", command = lambda: self.getLotsLoading())
+        except Exception:
+            pass
+        try:
+            self.setUserButtonIfUserExists()
+        except Exception:
+            pass
+        try:
+            self.userLabelButton.config(state = "normal")
+        except Exception:
+            pass
+        try:
+            self.frame.bind("<Configure>", self.onFrameConfigure)
+        except Exception:
+            pass
+        try:            
+            self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        except Exception:
+            pass        
+        #self.createUser = True
+        try:
+            self.userAccountCanvas.destroy()
+        except Exception:
+            pass
+        try:
+            self.mainCanvas.delete("blur")
+        except Exception:
+            pass
+        global s
+        try:
+            s.delete("blur")
+        except Exception:
+            pass
+        if self.displayingSpotScreen_bool:
+            self.start()       
 
     #this function resets the previously disabled buttons, and also resets their commands.
     #also, all 'User information' is reset to their original states. 
     #'userAccountCanvas' is also destroyed, and also the rectange image with the blur 
     def close_resetAll(self):
-        self.getReadingButton.config(state = "normal", command = lambda: self.getLotsLoading())
-        self.userLabelButton.config(state = "normal", command = lambda : self.noUserButtonClick())
+        try:
+            self.getReadingButton.config(state = "normal", command = lambda: self.getLotsLoading())
+        except Exception:
+            pass
+        try:
+            self.userLabelButton.config(state = "normal", command = lambda : self.noUserButtonClick())
+        except Exception:
+            pass
+        try:
+            self.frame.bind("<Configure>", self.onFrameConfigure)
+        except Exception:
+            pass
+        try:            
+            self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        except Exception:
+            pass
+        self.userExists = False
         self.createUser = True
         #---------------------------------------------------
         self.gender = None
@@ -439,8 +701,19 @@ class FindMeParkingApp(Tk):
         self.exp_month, self.exp_year = None, None
         self.username, self.password = "", "" 
         #---------------------------------------------------
-        self.userAccountCanvas.destroy()        
-        self.mainCanvas.delete("blur")
+        try:
+            self.userAccountCanvas.destroy()
+        except Exception:
+            pass
+        try:
+            self.mainCanvas.delete("blur")
+        except Exception:
+            pass
+        global s
+        try:
+            s.delete("blur")
+        except Exception:
+            pass
 
     #this function creates the 1st of 3 registration screens above 'mainCanvas'. It does
     #so by creating some text, a few Entry and Button elements, and also a Label element
@@ -896,7 +1169,9 @@ class FindMeParkingApp(Tk):
         f.write(f"{self.exp_year}")        
         f.close()
 
-    def confirmRegistration(self):
+    #this is 1 of 3 times the progress bar will be displayed in this app
+    #this function creates the mini 'saving data' above 'mainCanvas'.
+    def mini_mainCanvas(self):
         try:
             self.empty_Label.destroy()
         except Exception:
@@ -908,8 +1183,11 @@ class FindMeParkingApp(Tk):
         self.userAccountCanvas = Canvas(self.mainCanvas, bg = "gray79", width = int((self.mainCanvas.winfo_reqwidth() / 6) * 5), height = int((self.mainCanvas.winfo_reqheight() / 6) * 2))
         self.userAccountCanvas.place(x = int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.userAccountCanvas.winfo_reqwidth() / 2), y = int(self.mainCanvas.winfo_reqheight() / 2) - int(self.userAccountCanvas.winfo_reqheight() / 2))
         
-        self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 60, text = "Saving Data", font = ('bold',30), tags = "text",)
+    #this function creats and displays a small confirmation screen
+    def confirmRegistration(self):
+        self.mini_mainCanvas()
         
+        self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 60, text = "Saving Data", font = ('bold',30), tags = "text",)
         self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 200, text = "Saving may take a couple seconds", font = ('bold', 9), justify = "center", fill = "black", tags = "register")
         self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 215, text = "Please be patient", font = ('bold', 9), justify = "center", fill = "black", tags = "register")
         
@@ -918,7 +1196,8 @@ class FindMeParkingApp(Tk):
         self.p.place(x = int((self.userAccountCanvas.winfo_reqwidth()) / 2), y = 140, anchor = "center",)
         self.route = 3
         self.after(1000, self.loading)
-        
+
+    #this function changes the display image of the 'userLabelButton' button
     def changeImage_Login(self):
         try:
             self.noUserPopupLabel.destroy()
@@ -935,115 +1214,193 @@ class FindMeParkingApp(Tk):
         self.userAccountCanvas.destroy()        
         self.mainCanvas.delete("blur")
 
+    #this function is called when 'userLabelButton' is clicked an odd number of times
+    #this function reconfigures the command for the 'userLabelButton' button.
+    #it also creates a new popup window 'userPopupLabel,' which displays 
+    #the user's name, email adress, and 3 buttons: profile, history, and logout
     def UserSettings(self):
-        print("Congrats")
-        self.fname = "Michelle"
-        self.userPopupLabel = Canvas(self.mainCanvas, bg = "spring green", highlightbackground="gray40")# font = ('bold', 10), text = )
-        self.userPopupLabel.place(x = int(self.mainCanvas.winfo_reqwidth() /2), y = 20, width = 130, height = 160)
+        self.userLabelButton.config( command = lambda : self.closeUserSettings(),)
+        self.userPopupLabel = Canvas(self.mainCanvas, bg = "spring green", highlightbackground="gray40")
+        self.userPopupLabel.place(x = int(self.mainCanvas.winfo_reqwidth() /2), y = 20, width = 130, height = 140)
         self.userPopupLabel.create_text(65,20,font = ('bold', 10), text = f"Welcome {self.fname}", justify = "center", fill = "gray14")
-        self.userPopupLabel.create_text(65,35,font = ('bold', 8), text = f"{self.userEmail}", justify = "center", fill = "gray88")
+        self.userPopupLabel.create_text(65,35,font = ('bold', 8), text = f"{self.email}", justify = "center", fill = "gray66")
         
-        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "user profile", fg = "gray16", activebackground="medium spring green", activeforeground="gray16",).place(x = 35, y = 95, height = 30, width = 60)
+        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "previous bookings", fg = "gray16", activebackground="medium spring green", activeforeground="gray16",).place(x = 5, y = 45, height = 30, width = 120)
         
-        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "log out", fg = "gray16", activebackground="medium spring green", activeforeground="gray16",).place(x = 35, y = 125, height = 30, width = 60)
+        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "user profile", fg = "gray16", activebackground="medium spring green", activeforeground="gray16",).place(x = 5, y = 75, height = 30, width = 120)
         
-        """
-        self.noUserPopupLabelButton = Button(self.noUserPopupLabel, bg = "forest green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "Get More", fg = "gray16", activebackground="forest green", activeforeground="gray16", command = lambda: self.confirmRegistration())
-        self.noUserPopupLabelButton.place(x = 35, y = 40, width = 60)
-        """
+        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "log out", fg = "gray16", activebackground="medium spring green", activeforeground="gray16",).place(x = 5, y = 105, height = 30, width = 120)
+        
+    #this function is called when 'userLabelButton' is clicked an even number of times
+    def closeUserSettings(self):
+        #'userLabelButton' has its command changed to original function
+        self.userLabelButton.config(command = lambda : self.UserSettings())
+        #'noUserPopupLabel' is destroyed
+        self.userPopupLabel.destroy()
 
+    #this is 1 of 3 times the progress bar will be displayed in this app
+    #this function shows a progress bar while setting up to display to
+    #assigned parking spot, and entance/exit maps to the user
     def getLotsLoading(self):
-        self.getReadingButton.destroy()
-        self.userLabelButton.config(command = lambda : self.noUserButtonClick())
+        try:
+            self.userPopupLabel.destroy() 
+        except Exception:
+            pass
         try:
             self.noUserPopupLabel.destroy()
         except Exception:
             pass
-        self.mainCanvas.delete("text")
-        self.mainCanvas.create_text(int((self.width - 20) / 2), 440, text = 'Loading Parking Lot Database', font = ('bold', 12), anchor = "center", tags = 'text')
-        self.p = ttk.Progressbar(self.mainCanvas, orient="horizontal", length=200, mode="determinate",takefocus=True, maximum=100)
-        self.p['value'] = 0
-        self.p.place(x = int((self.width - 20) / 2), y = 400, anchor = "center",)
-        self.route = 2
-        self.after(1000, self.loading)
+        if not self.has_activeLot:            
+            self.getReadingButton.destroy()
+            self.setUserButtonIfUserExists()
+            try:
+                self.noUserPopupLabel.destroy()
+            except Exception:
+                pass
+            self.userLabelButton.config(state="disabled")
+            self.mainCanvas.delete("text")
+            self.mainCanvas.create_text(int((self.width - 20) / 2), 440, text = 'Loading Parking Lot Database', font = ('bold', 12), anchor = "center", tags = 'text')
+            self.p = ttk.Progressbar(self.mainCanvas, orient="horizontal", length=200, mode="determinate",takefocus=True, maximum=100)
+            self.p['value'] = 0
+            self.p.place(x = int((self.width - 20) / 2), y = 400, anchor = "center",)
+            self.setActiveScreen(4)
+            self.route = 2
+            self.after(1000, self.loading)
+        else:
+            #decorates the canvas
+            self.decorateCanvas(self.mainCanvas)
+            #displays already assigned parking spot
+            self.displayParkingSpotInformation()
 
+    #this funcion is a basic check and balance 
     def checker(self):
         if self.__checking == 0:
             self.__checking = 1
+            #calls the 'showGivenSpot' function
             self.showGivenSpot()
 
+    #this function is called after a loading screen after the user decides to search for a spot
     def checkAvailability(self):
         try:
             self.mainCanvas.delete("text")
         except Exception:
             pass
-        
+        self.setActiveScreen(5)
+        #this function is called to prepare the widow for a scroll event
         self.setScroll()
+        #after the scroll event is created, it is then populated with displays, and information
         self.populate()     
 
+    #this function is called to create a scroll event within the app window
     def setScroll(self):
-        try:
-            self.main.destroy()
-        except Exception:
-            pass
-        
-        try:
-            self.canvas.destroy()
-        except Exception:
-            pass
-        
-        try:
-            self.frame.destroy()
-        except Exception:
-            pass
-        
+        #1st: it destroys a few displays that are either:
+        #1. no longer needed
+        #2. going to be recreated
         try:
             self.vsb.destroy()
         except Exception:
             pass
-        
-        self.main = Canvas(self.mainCanvas, background="#ffffff")
+        try:
+            self.frame.unbind("<Configure>")
+            self.frame.destroy()
+        except Exception:
+            pass
+        try:
+            self.canvas.unbind_all("<MouseWheel>")
+            self.canvas.unbind_all("<Double-Button-1>")
+            self.canvas.destroy()
+        except Exception:
+            pass
+        try:
+            self.main.destroy()
+        except Exception:
+            pass
+        #create a new 'main' canvas and packs it in to 'mainCanvas'
+        #this serves as a container for future widgets
+        self.main = Canvas(self.mainCanvas,)
         self.main.pack(side="left", fill="both", expand=True)
-        
-        self.canvas = Canvas(self.main, borderwidth=0, background="#ffffff",width=self.mainCanvas.winfo_reqwidth() ,height=self.mainCanvas.winfo_reqheight())
-        
-        self.frame = Canvas(self.canvas, background="#ffffff",width=self.mainCanvas.winfo_reqwidth(), height=self.mainCanvas.winfo_reqheight())
-        
+        #create a new 'canvas' canvas in the 'main canvas, preset with the width and height of 'mainCanvas'
+        self.canvas = Canvas(self.main, borderwidth=0, width=self.mainCanvas.winfo_reqwidth() - 10, height=self.mainCanvas.winfo_reqheight() - 10)
+        ##create a new 'frame' canvas in the 'canvas' canvas, preset with the width and height of 'mainCanvas'
+        self.frame = Canvas(self.canvas, width = self.mainCanvas.winfo_reqwidth(), height = self.mainCanvas.winfo_reqheight() - 10)
+        #self.decorateCanvas(self.frame)
+        #'vsb' is a Scrollbar event, and it is placed on self
         self.vsb = Scrollbar(self, orient="vertical", command=self.canvas.yview)
-        
+        #sets a yscrollcommand for the 'canvas' widget
         self.canvas.configure(yscrollcommand=self.vsb.set)
-        
+        #places the scrollbar off screen
         self.vsb.place(x = self.mainCanvas.winfo_reqwidth()+30, y = 0)
-        
+        #packs the 'camvas' widet into the 'main' widget
         self.canvas.pack(side="left", fill="both", expand=True)
-        
+        #sets the 'frame' widget as a window of the 'canvas' widget
         self.canvas.create_window((4,4), window=self.frame, anchor="nw",tags="self.frame")
-
+        #binds 2 functions to the canvas, and 1 to the frame
         self.frame.bind("<Configure>", self.onFrameConfigure)
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
         self.canvas.bind_all("<Double-Button-1>", self.backtoHome)
 
+    #this function creates the parking lot objects and displays on the window
     def populate(self):
+        #creates a list to store the parking lot objects
         self.lots = []
-        
+        global distances
+        distances = [100,300,600,400]
+        #creates parking lot objects using the object 'parkingLots' of the 'GetLot' class
         for lotname in self.parkingLots.listOfFolders:
             lot = ParkingLotInfo(files.rel_path, lotname)
+            #appends each object to the 'lots' list
             self.lots.append(lot)
-
-        for lot in self.lots:        
+        #using each parking lot object from the 'lots' list, it:
+        for i, lot in enumerate(self.lots):
+            #creates a temporary "c" canvas, with a preset width and height 
             c = Canvas(self.frame, bg="azure", width=self.mainCanvas.winfo_reqwidth() - 10, height=self.mainCanvas.winfo_reqheight() - 5, )
-            back = Button(c, text = "BACK", font = ('bold',20), highlightthickness = 0, relief = "flat", borderwidth = 0, bg = "alice blue", fg = "black", justify = "center")
+            #creates and places a button 'back' within 'c', to back to previous window
+            back = Button(c, text = "BACK", font = ('bold',15), highlightthickness = 0, relief = "flat", borderwidth = 0, bg = "alice blue", fg = "black", justify = "center", command = lambda : self.goback(0))
             back.place(x = 10, y = 10, width = 90, height = 30,)
-            c.create_text(int(c.winfo_reqwidth()/2), 80, text = f"{lot.ParkingLot_name}", font = ('bold', 20), anchor = "center", tags = 'text')
+            #adds some text with the parking lot name
+            c.create_text(int(c.winfo_reqwidth()/2), 85, text = f"{lot.ParkingLot_name}", font = ('bold', 20), anchor = "center", tags = 'text')
+            c.create_text(int(c.winfo_reqwidth()/2), 125, text = f"is {distances[i]} meters away", font = ('bold', 15), anchor = "center", tags = 'text')
+            #creates and places a label 'l' within c, which displays the logo of the parking lot object
             l = Label(c, bg = "PaleTurquoise2", image=lot.image)
             l.place(x = int(c.winfo_reqwidth()/2) - int(l.winfo_reqwidth()/2), y = 150, )
-            c.create_text(int((self.width - 20) / 2), 510, text = f'It currently has {lot.ParkingLot_amountAvailable} available parking spots.', font = ('bold', 13), anchor = "center", tags = 'text')            
-            b = self.setButton(c, "medium spring green", lot)
-            b.place(x = int(c.winfo_reqwidth()/2) - int(b.winfo_reqwidth()/2), y = 570,) 
+            #adds some text with the parking lot available spots
+            c.create_text(int((self.width - 20) / 2), 510, text = f'It currently has {lot.ParkingLot_amountAvailable} available parking spots.', font = ('bold', 13), anchor = "center", tags = 'text')
+            #creates and places a button 'b' within 'c', to choose the preferred parking lot object.
+            #the 'c' canvas, a colour and the parking lot object are passed in as parameters.
+            b = self.setButton(c, "medium spring green", lot, i)
+            b.place(x = int(c.winfo_reqwidth()/2) - int(b.winfo_reqwidth()/2), y = 570,)
+            #'c' is packed into the 'frame' widget
             c.pack(fill="both", expand=True, )
-            c.bind
 
-    def create_rectangle(self,x1, y1, x2, y2, **kwargs):
+    #this function allows the user to go back to a previous page
+    def goback(self, i):
+        if i == 0:
+            try:
+                self.vsb.destroy()
+            except Exception:
+                pass
+            try:
+                self.frame.unbind("<Configure>")
+                self.frame.destroy()
+            except Exception:
+                pass
+            try:
+                self.canvas.unbind_all("<MouseWheel>")
+                self.canvas.unbind_all("<Double-Button-1>")
+                self.canvas.destroy()
+            except Exception:
+                pass
+            try:
+                self.main.destroy()
+            except Exception:
+                pass
+            self.mainCanvas.destroy()
+            self.mainCanvas = Canvas(self.labelFrame, width = self.width - 20, height = self.height - 20, bg = "#ffffff")
+            self.mainCanvas.place(x = 0, y = 0)
+            self.createMainButton()
+
+    #this function creates a blurred rectangle canvas image object in place of a canvas rectange object
+    def create_rectangle(self,canvas,x1, y1, x2, y2, **kwargs):
         if 'alpha' in kwargs:
             alpha = int(kwargs.pop('alpha') * 255)
             fill = kwargs.pop('fill')
@@ -1051,62 +1408,119 @@ class FindMeParkingApp(Tk):
             fill = self.winfo_rgb(fill) + (alpha,)
             image = Image.new('RGBA', (x2-x1, y2-y1), fill)
             self.shapes.append(ImageTk.PhotoImage(image))
-            self.mainCanvas.create_image(x1, y1, image=self.shapes[-1], anchor='nw', tags = tags)
-        self.mainCanvas.create_rectangle(x1, y1, x2, y2, **kwargs)
+            canvas.create_image(x1, y1, image=self.shapes[-1], anchor='nw', tags = tags)
+        canvas.create_rectangle(x1, y1, x2, y2, **kwargs)
 
-    def setButton(self,c, choice, lot):
-        return Button(c, text="Reserve", font = ('bold',20), command = lambda : self.setParkingLot(lot), width = 10, height = 2, highlightthickness = 0, relief = "flat", borderwidth = 0, bg = choice, fg = "black")
+    #this function returns a button object with specific parameters
+    #this button will have a command to set the referred parking lot
+    def setButton(self, c, choice, lot, i):
+        return Button(c, text="Reserve", font = ('bold',20), command = lambda : self.setParkingLot(lot, i), width = 10, height = 2, highlightthickness = 0, relief = "flat", borderwidth = 0, bg = choice, fg = "black")
 
-    def setParkingLot(self, lot):
-        self.userLabelButton.config(command = lambda : self.noUserButtonClick())
+    #this function sets the activeLot variable to the selected parking lot object
+    def setParkingLot(self, lot, i):
+        #reconfigures the command for the 'userLabelButton' button
+        self.setUserButtonIfUserExists()
         try:
+            #destroys the 'noUserPopupLabel' canvas if it exists
             self.noUserPopupLabel.destroy()
         except Exception:
             pass
         self.activeLot = lot
+        self.distanceAway = i
+        
         self.has_activeLot = True
         self.checker()
 
+    #this function configues the 'canvas' canvas
     def onFrameConfigure(self, event):
         '''Reset the scroll region to encompass the inner frame'''
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
+    #this function configues the 'canvas' canvas scroll type
     def _on_mousewheel(self, event):
-        self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        try:
+            self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        except Exception:
+            self.mailBoxCanvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
+    #this method selects a parking spot for the user
     def showGivenSpot(self):
-        self.mySpot = choice(self.activeLot.ParkingLot_availableSpots) 
-        print(self.mySpot)
+        self.setActiveScreen(6)        
+        #the 'mySpot' variable is assigned a random available spot (type - list)
+        self.mySpot = choice(self.activeLot.ParkingLot_availableSpots)
+        self.mainCanvas.destroy()
+        self.create_mainCanvas()
+        self.decorateCanvas(self.mainCanvas)
+        self.create_userLabelButton()
+        self.userLabelButton.config(state="disabled")
+        #displays the progress bar
         self.setProgressBar()
-        self.getMapImages()        
+        #creates map images
+        self.getMapImages()
 
-    def getMapImages(self):               
+    #this function creates 2 images of the parking lot object to display
+    def getMapImages(self):
+        #imports the 'ParkingLot' class
+        from Parking import ParkingLot
         index = ""
+        #the 3rd item in the 'mySpot' variable is an integer
+        #if this integer is less than 10, the 'index' string become '0+this integer'
+        #eg. if the integer is 7, the index becomes "07"
+        #if this integer is greater than 10, the 'index' string become 'this integer'
+        #eg. if the integer is 17, the index becomes "17"
         if self.mySpot[2] < 10:
             index = f'0{self.mySpot[2]}'
         else:
             index = self.mySpot[2]
-            
+        #creates a ParkinLot object 'entrance', using specific parameters 
         entrance = ParkingLot(self.activeLot.ParkingLot_mapcontents, self.activeLot.ParkingLot_sides, "E", index, 1, self.mySpot[0], f"{self.activeLot.path}{self.mySpot[0]}_entrance.png", self.activeLot.ParkingLot_number)
-        self.EntranceMap =  ImageTk.PhotoImage(entrance.output_image().resize(self.newsize, Image.Resampling.LANCZOS))
-        
+        #creates an 'EntranceMap' image
+        self.EntranceMap = ImageTk.PhotoImage(entrance.output_image().resize(self.newsize, Image.Resampling.LANCZOS))
+        #creates a ParkinLot object 'exit', using specific parameters 
         exit = ParkingLot(self.activeLot.ParkingLot_mapcontents, self.activeLot.ParkingLot_sides, index, "X", 0, self.mySpot[0],  f"{self.activeLot.path}{self.mySpot[0]}_exit.png", self.activeLot.ParkingLot_number)
+        #creates an 'ExitMap' image
         self.ExitMap =  ImageTk.PhotoImage(exit.output_image().resize(self.newsize, Image.Resampling.LANCZOS))
+        #create entrance map 'mail' item
+        mail = Mail(self.activeLot.ParkingLot_name, self.distanceAway, self.mySpot[0], "Entrance Map", 1, datetime.now(), image = self.EntranceMap)
+        self.inbox.append(mail)
+        #create exit map 'mail' item
+        mail = Mail(self.activeLot.ParkingLot_name, self.distanceAway, self.mySpot[0], "Exit Map", 2, datetime.now(), image = self.ExitMap)
+        self.inbox.append(mail)
 
-    def getSpots(self):
-        import re
-        with open(files.spot_names) as f:
-            for line in f:
-                word = line.rstrip().split('#')
-                spots = []
-                pos = re.sub(r"[\([{})\]]", "", word[0])
-                res = tuple(map(int, pos.split(', ')))
-                spots.append(res) #position
-                spots.append(word[2].strip()) #name
-                spots.append(word[3].strip()) #status
-                spots.append(int(word[1].strip())) #index
-                self.__getLotSpotsStatuses.append(spots)
+    #this function sets the boolean for each screen
+    def setActiveScreen(self, screenNum):
+        if screenNum == 1:
+            pass
+        else:
+            self.homeScreen_bool = False
+        if screenNum == 2:
+            self.apLoadingScreen_bool = True
+        else:
+            self.apLoadingScreen_bool = False
+        if screenNum == 3:
+            self.appMainScreen_bool = True
+        else:
+            self.appMainScreen_bool = False
+        if screenNum == 4:
+            self.gettingLotsScreen_bool = True
+        else:
+            self.gettingLotsScreen_bool = False
+        if screenNum == 5:
+            self.displayingLotsScreen_bool = True
+        else:
+            self.displayingLotsScreen_bool = False
+        if screenNum == 6:
+            self.gettingSpotScreen_bool = True
+        else:
+            self.gettingSpotScreen_bool = False
+        if screenNum == 7:
+            self.displayingSpotScreen_bool = True
+        else:
+            self.displayingSpotScreen_bool = False
 
+# MAIL APP STUFF --------------------------------------------------------------------------------------------------
+
+    #this function displays the mailbox window
     def mail(self):
         try:
             self.canvas.delete("text")
@@ -1119,36 +1533,212 @@ class FindMeParkingApp(Tk):
         self.mainCanvas.config(bg = "azure")
         
         self.mainCanvas.create_text(200, 30, text = 'MAILBOX', font = ('bold', 30), anchor = "center", tags = 'text')
-        self.mainCanvas.create_text(200, 60, text = f'{self.userEmail}', font = ('bold', 18), anchor = "center", tags = 'text',fill = "gray31")
+        if self.email:
+            self.mainCanvas.create_text(200, 60, text = f'{self.email}', font = ('bold', 18), anchor = "center", tags = 'text',fill = "gray31")
+        else:
+            self.mainCanvas.create_text(200, 60, text = f'{self.demoEmail}', font = ('bold', 18), anchor = "center", tags = 'text',fill = "gray31")
         
-        self.mainCanvas.create_text(200, 85, text = f'Unread Mail: {self.unreadMail}', font = ('bold', 14), anchor = "center", tags = 'text',fill = "gray50")
-        self.mainCanvas.create_rectangle(3, 3, 381, 731, outline = "black", width = 2, tags="rectangle")
-          
-        self.listbox = Listbox(self.mainCanvas ,font = ('times',20), bd=0, highlightthickness=1, relief='ridge', highlightbackground="black",bg="snow2") 
-        self.listbox.place(x = 4, y = 100, width = int(self.mainCanvas.winfo_reqwidth() / 4), height = self.mainCanvas.winfo_reqheight() - 104,)
-        
+        Button(self.mainCanvas, text = 'BACK', relief = "flat", font = ('bold', 15), fg = "blue2", activeforeground = "blue2", bg = "light cyan", activebackground = "light cyan", command = lambda : self.backHome()).place(x = 10, y  = 10)
+            
         if len(self.inbox) == 0:
-            pass
-            #for values in range(200): 
-            #    self.listbox.insert(END, values)
+            amnt = "mail"
+        else:
+            amnt = "mails"
+        self.mainCanvas.create_text(200, 85, text = f'{len(self.inbox)} {amnt} in Inbox', font = ('bold', 14), anchor = "center", tags = 'text',fill = "gray50")
         
-        #self.listbox.bind('<<ListboxSelect>>', self.Select)
-        self.listboxScrollbar = Scrollbar(self.mainCanvas)  
-        self.listboxScrollbar.place(x = self.mainCanvas.winfo_reqwidth(), y = 0, width = 0, height = 0)
+        self.mainCanvas.create_rectangle(3, 3, 381, 731, outline = "black", width = 2, tags="rectangle")       
         
-        self.mailBoxCanvas = Canvas(self.mainCanvas,bd=0, highlightthickness=2, relief='ridge', highlightbackground="black", bg = "light cyan")        
-        self.mailBoxCanvas.place(x = 100, y = 100, width = (int(self.mainCanvas.winfo_reqwidth() / 4) * 3) - 7, height = self.mainCanvas.winfo_reqheight() - 103,)
+        self.mailBoxCanvas = Canvas(self.mainCanvas, bd = 0, highlightthickness  =2, relief = 'ridge', highlightbackground = "black", bg = "light cyan")
+        self.mailBoxCanvas.bind("<Double-Button-1>", self.CloseMailnGoBacktoHome)
         
-        self.mailBoxCanvas.create_text(int(self.mainCanvas.winfo_reqwidth() / 2) - 50, int(self.mainCanvas.winfo_reqheight() / 2) - 50, text = 'MailBox Empty', font = ('bold', 20), anchor = "center", tags = 'e_mailbox', fill = "midnight blue")
         #self.mailBoxCanvas.create_rectangle(0, 571, 288, 631, outline = "red", width = 2, tags="rectangle")
-        self.mailBoxCanvas.bind("<Double-Button-1>", self.ClosenGoBacktoHome)
+        self.dummyMails()
+        if len(self.inbox) == 0:
+            self.emptyMailBox()
+        else:
+            self.gotMail()
+    
+    #this function is used to check if 'self.gotMail()' works properly
+    #function is called 7 lines up, and can be commented/uncommented if necessary
+    def dummyMails(self):
+        mail = Mail("First Parking Lot", 100, "A1", "Entrance Map", 1, datetime.now())
+        self.inbox.append(mail)
+        mail = Mail("First Parking Lot", 100, "A1", "Exit Map", 2, datetime.now())
+        self.inbox.append(mail)
+        mail = Mail("Second Parking Lot", 200, "A2", "Entrance Map", 1, datetime.now())
+        self.inbox.append(mail)
+        mail = Mail("Second Parking Lot", 200, "A2", "Exit Map", 2, datetime.now())
+        self.inbox.append(mail)
+        mail = Mail("Third Parking Lot", 300, "A3", "Entrance Map", 1, datetime.now())
+        self.inbox.append(mail)
+        mail = Mail("Third Parking Lot", 300, "A3", "Exit Map", 2, datetime.now())
+        self.inbox.append(mail)
+        mail = Mail("Fourth Parking Lot", 400, "A4", "Entrance Map", 1, datetime.now())
+        self.inbox.append(mail)
+        mail = Mail("Fourth Parking Lot", 400, "A4", "Exit Map", 2, datetime.now())
+        self.inbox.append(mail)
+            
+    #this function is called if the mailbox is empty
+    def emptyMailBox(self):
+        self.mailBoxCanvas.place(x = 100, y = 100, width = (int(self.mainCanvas.winfo_reqwidth() / 4) * 3) - 7, height = self.mainCanvas.winfo_reqheight() - 103,)
+        self.listbox = Listbox(self.mainCanvas, font = ('bold', 20), bd = 0, highlightthickness = 2, relief = 'ridge', highlightbackground = "black", bg  ="snow2", selectmode = 'browse', activestyle = "dotbox",) 
+        self.listbox.place(x = 2, y = 100, width = int(self.mainCanvas.winfo_reqwidth() / 4) + 3, height = self.mainCanvas.winfo_reqheight() - 103,)
+        stop = 0
+        while stop < 80:    
+            self.listbox.insert(stop, f"",)
+            #self.listbox.insert(END,"_ _ _ _")
+            if stop % 3 == 0:
+                self.listbox.itemconfigure(stop, background = 'papaya whip',)
+            elif stop % 3 == 1:
+                self.listbox.itemconfigure(stop, background = 'PaleTurquoise2',)
+            else:
+                self.listbox.itemconfigure(stop, background = 'azure3')
+            stop += 1
+            
+        self.mailBoxCanvas.create_text(int(self.mainCanvas.winfo_reqwidth() / 2) - 50, int(self.mainCanvas.winfo_reqheight() / 2) - 50, text = 'MailBox Empty', font = ('bold', 20), anchor = "center", tags = 'e_mailbox', fill = "midnight blue")
 
-    def ClosenGoBacktoHome(self, event):
-        if self.unbindEvent == 1:            
-            if 0 < event.x < 288 and 571 < event.y < 631: #0, 591, 288, 631
+    #this function is called when a populated mail is clicked
+    def clickedmail(self, i = None, mail = None):
+        if i is not None:
+            print(i, mail.header)
+            popupMail = Canvas(self.mainCanvas, bg = "red2")
+            Button(popupMail, text = 'close', relief = "flat", font = ('bold', 12), fg = "red2", activeforeground = "red2", bg = "light cyan", activebackground = "light cyan").place(x = 310, y  = 10)
+            popupMail.place(x = 6, y = 93, width = self.mainCanvas.winfo_reqwidth() - 12, height = int((self.mainCanvas.winfo_reqheight() / 8) * 7) - 7)
+            #popupMail.create_text()
+        
+    #this function creates a canvas widget to display mail information
+    def setEmailCanvas(self, canvas, i = None,):
+        c = Canvas(canvas, height = 80, width = self.mainCanvas.winfo_reqwidth() - 21, bd = 1, highlightbackground = "gray87",  relief = "flat", )
+        logo = Label(c, text = "F", font = ('bold',50), borderwidth = 2, relief = "solid",)
+        time = Label(c, text = f'{self.inbox[i].time.strftime("%b %d")}', font = ('bold', 10),)       
+        header = Label(c,)
+        header.config(text = "Find Me Parking", font = ('bold', 17))
+        middle = Label(c,)
+        middle.config(text = f"{self.inbox[i].header} from Find Me Parking", font = ('bold', 12),)
+        footcontainer = Label(c, borderwidth = 0, )
+        footer = Label(footcontainer,)
+        footer.grid(row = 0, column = 0)
+        footer.config(text = f"[Find Me Parking] Your parking spot at {self.inbox[i].lot_name} is...", font = ('bold', 10), )
+        
+        logo.place(x = 7, y = 7, width = 70, height = 70,)
+        time.place(x = 325, y = 5)
+        header.place(x = 80, y = 5)
+        middle.place(x = 80, y = 36)
+        footcontainer.place(x = 80, y = 60, width = 285)
+        
+        logo.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
+        time.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
+        header.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
+        middle.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
+        footcontainer.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
+        footer.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
+        c.bind("<ButtonPress-1>", lambda event, a = i, b =  self.inbox[i]: self.clickedmail(a, b))
+        
+        if i % 3 == 0:
+            logo.configure(bg = 'azure3')
+            time.config(bg = 'papaya whip',)
+            header.config(bg = 'papaya whip',)
+            middle.config(bg = 'papaya whip',)
+            footer.config(bg = 'papaya whip',)
+            c.configure(bg = 'papaya whip',)
+        elif i % 3 == 1:
+            logo.config(bg = 'papaya whip',)
+            time.configure(bg = 'PaleTurquoise2',)
+            header.config(bg = 'PaleTurquoise2',)
+            middle.configure(bg = 'PaleTurquoise2',)
+            footer.configure(bg = 'PaleTurquoise2',)
+            c.configure(bg = 'PaleTurquoise2',)
+        else:
+            logo.configure(bg = 'PaleTurquoise2',)
+            time.config(bg = 'azure3',)
+            header.config(bg = 'azure3',)
+            middle.configure(bg = 'azure3')
+            footer.configure(bg = 'azure3')
+            c.configure(bg = 'azure3')        
+        return c
+
+    #this function is calld if the length of the user inbox is not 0
+    #it populates the inbox area with mini canvases to show mail information
+    def gotMail(self):
+        try:
+            self.listbox.destroy()
+        except Exception:
+            pass
+        print(f"Length of inbox: {len(self.inbox)}")
+        stop = 0
+        
+        self.mailBoxCanvas.place(x = 2, y = 100, width = self.mainCanvas.winfo_reqwidth() - 4, height = self.mainCanvas.winfo_reqheight() - 103,)
+        
+        self.mailScroll()
+        
+        while stop < (len(self.inbox) + 12):
+            if stop <= len(self.inbox) - 1:
+                email_thumbnail = self.setEmailCanvas(self.frame, stop)                
+                email_thumbnail.grid(row = stop, column = 0,)
+            else:
+                pass
+                email_thumbnail = Canvas(self.frame, height = 80, width = self.mainCanvas.winfo_reqwidth() - 21, bd = 1, highlightbackground = "gray87",  relief = "flat",)
+                email_thumbnail.grid(row = stop, column = 0,)
+                email_thumbnail.create_text(int((self.mainCanvas.winfo_reqwidth() - 14) / 2), 40, text = "-", font = ('bold', 30), justify = "left", fill = "gray58")
+                if stop % 3 == 0:
+                    email_thumbnail.configure(bg = 'papaya whip',)
+                elif stop % 3 == 1:
+                    email_thumbnail.configure(bg = 'PaleTurquoise2',)
+                else:
+                    email_thumbnail.configure(bg = 'azure3',)
+            stop += 1
+    
+    #this function sets the scrolling for the mailbox option
+    def mailScroll(self):
+        self.main = Canvas(self.mailBoxCanvas, bd = 0, highlightthickness = 0, width = self.mainCanvas.winfo_reqwidth() - 8, height = self.mainCanvas.winfo_reqheight() - 106,)
+        self.main.place(x = 2, y = 2)
+        #create a new 'canvas' canvas in the 'main canvas, preset with the width and height of 'mainCanvas'
+        self.canvas = Canvas(self.main, borderwidth=0, width = self.mainCanvas.winfo_reqwidth() - 12, height = self.mainCanvas.winfo_reqheight() - 111,)
+        ##create a new 'frame' canvas in the 'canvas' canvas, preset with the width and height of 'mainCanvas'
+        self.frame = Canvas(self.canvas, width = self.mainCanvas.winfo_reqwidth(), height = self.mainCanvas.winfo_reqheight() - 10)
+        #'vsb' is a Scrollbar event, and it is placed on self
+        self.listboxScrollbar = Scrollbar(self.mainCanvas, orient="vertical", command=self.canvas.yview)
+        #sets a yscrollcommand for the 'canvas' widget
+        self.canvas.configure(yscrollcommand=self.listboxScrollbar.set)
+        #places the scrollbar off screen
+        self.listboxScrollbar.place(x = self.mainCanvas.winfo_reqwidth()+30, y = 0)
+        #packs the 'camvas' widet into the 'main' widget
+        self.canvas.pack(side="left", fill="both", expand=True)
+        self.canvas.create_window((4,4), window=self.frame, anchor="nw",tags="self.frame")
+        #binds 2 functions to the canvas, and 1 to the frame
+        self.frame.bind("<Configure>", self.onFrameConfigure)
+        self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        self.canvas.bind_all("<Double-Button-1>", self.backtoHome)
+
+    #this function checks where on 'mainCanvas' the mouse was clicked twice (event)
+    #and if the event happened in a certain region, certain specific action would take place
+    #note: this event will not work on the home screen 
+    def CloseMailnGoBacktoHome(self, event):
+        if self.unbindEvent == 1:
+            #if the event occured at the bottom of 'mainCanvas'
+            if 0 < event.x < 288 and 571 < event.y < 631:
                 self.unbindEvent = 0
                 self.createUser = True
                 self.mainCanvas.destroy()
                 self.homePage()
+    
+    #this function also closes the mail app and takes the user back to the homepage
+    def backHome(self):
+        self.unbindEvent = 0
+        self.createUser = True
+        self.mainCanvas.destroy()
+        self.homePage()
+                
+#The mail class
+#this is a simple class to construct what the mail is to look like
+class Mail:
+    def __init__(self, lot_name, distance, spot, header, type, time, image = None):
+        self.lot_name = lot_name
+        self.distance = distance
+        self.spot = spot
+        self.image = image
+        self.header = header
+        self.time = time
+        self.type = type
 
 FindMeParkingApp()
