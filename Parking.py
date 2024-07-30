@@ -377,5 +377,5 @@ class ParkingLot():
         # Draw map heading        
         draw.text((40, 0),f"Guide Map For {toORfrom} {self.spot}",(255,255,255),font = ImageFont.load_default(size=50))
         img.resize(newsize, Image.Resampling.LANCZOS)
-        img.save(self.imagename)
+        #img.save(self.imagename)
         return img

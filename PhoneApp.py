@@ -7,6 +7,7 @@ from time import strftime, sleep
 from PIL import ImageTk, Image
 from datetime import datetime
 import phonefiles as files
+from os import listdir
 import re
 
 class FindMeParkingApp(Tk):
@@ -205,6 +206,8 @@ class FindMeParkingApp(Tk):
             self.mainCanvas.create_text(375, self.height - 32, text = 'Capstone Group 3', font = ('bold', 6), anchor = "ne", tags = 'group')
             #calls the after method for app loading screen
             self.setActiveScreen(2)
+            global no_of_images
+            no_of_images = len([image for image in listdir(files.loading_gif)])
             self.mainCanvas.after(300, self.addImages)
         else:
             #decorates the canvas
@@ -260,8 +263,9 @@ class FindMeParkingApp(Tk):
     #this function displays images from a folder in sequence
     #to simulate a loading animation
     def addImages(self):
-        #imports the sleep function from the 'time' library 
-        if self.count <= 12:      
+        #there are 12 files in the directory.
+        #this will be fixed to be more dynamic
+        if self.count <= no_of_images:      
             try:
                 #deletes all elements from 'mainCanvas' with the "loading_image" tag
                 self.mainCanvas.delete("loading_image") 
@@ -694,6 +698,7 @@ class FindMeParkingApp(Tk):
         except Exception:
             pass
         if self.displayingSpotScreen_bool:
+            self.sendMail()
             self.start()       
 
     #this function resets the previously disabled buttons, and also resets their commands.
@@ -1520,6 +1525,12 @@ class FindMeParkingApp(Tk):
         exit = ParkingLot(self.activeLot.ParkingLot_mapcontents, self.activeLot.ParkingLot_sides, index, "X", 0, self.mySpot[0],  f"{self.activeLot.path}{self.mySpot[0]}_exit.png", self.activeLot.ParkingLot_number)
         #creates an 'ExitMap' image
         self.ExitMap = ImageTk.PhotoImage(exit.output_image().resize(self.newsize, Image.Resampling.LANCZOS))
+        try:
+            self.sendMail()
+        except Exception:
+            pass
+        
+    def sendMail(self):
         #If there is an active user present, send them a confirmation mail
         if self.userExists:
             #create entrance map 'mail' item
