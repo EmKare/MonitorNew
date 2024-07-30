@@ -98,7 +98,7 @@ class FindMeParkingApp(Tk):
     #this function checks if a user account exists
     def userCheck(self):
         try:
-            with open(f"{files.user_profile}UserProfile1.txt","r") as file:
+            with open(f"{files.user_profile}UserProfile.txt","r") as file:
                 lines = file.readlines()
                 if len(lines) > 0:
                     self.username = lines[0].strip('\n')
@@ -113,7 +113,7 @@ class FindMeParkingApp(Tk):
                     self.cvv = lines[9].strip('\n')
                     self.exp_month = lines[10].strip('\n')
                     self.exp_year = lines[11].strip('\n')
-                    self.userExists = True
+                    self.userExists = False
                 # else:
                     pass
         except:
@@ -1586,7 +1586,7 @@ class FindMeParkingApp(Tk):
         self.mainCanvas.config(bg = "azure")
         
         self.mainCanvas.create_text(200, 30, text = 'MAILBOX', font = ('bold', 30), anchor = "center", tags = 'text')
-        if self.email:
+        if self.userExists:
             self.mainCanvas.create_text(200, 60, text = f'{self.email}', font = ('bold', 18), anchor = "center", tags = 'text',fill = "gray31")
         else:
             self.mainCanvas.create_text(200, 60, text = f'{self.demoEmail}', font = ('bold', 18), anchor = "center", tags = 'text',fill = "gray31")
