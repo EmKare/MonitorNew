@@ -21,19 +21,20 @@ class FindMeParkingApp(Tk):
         #window cannot be resized
         self.resizable(False, False)
         self.title("Find Me Parking App")
+        self.config(cursor = "hand2")
+        #
         self.count, self.unbindEvent = 1, 0
         self.__checking = 0
         self.userExists = False
         self.distanceAway = None
-        
+        #booleans for each screen
         self.homeScreen_bool = False
         self.apLoadingScreen_bool = False
         self.appMainScreen_bool = False        
         self.gettingLotsScreen_bool = False
         self.displayingLotsScreen_bool = False
         self.gettingSpotScreen_bool = False
-        self.displayingSpotScreen_bool = False
-        
+        self.displayingSpotScreen_bool = False        
         #User information: this could be placed in 
         #a 'User' class in the future
         self.gender = None
@@ -113,7 +114,8 @@ class FindMeParkingApp(Tk):
                     self.cvv = lines[9].strip('\n')
                     self.exp_month = lines[10].strip('\n')
                     self.exp_year = lines[11].strip('\n')
-                    self.userExists = False
+                    self.userExists = True
+                    #self.userExists = False
                 # else:
                     pass
         except:
@@ -190,7 +192,10 @@ class FindMeParkingApp(Tk):
     #   then goes to display the assigned spot information
     def start(self):        
         #unbinds the single left click function from 'mainCanvas'
-        self.mainCanvas.unbind("<ButtonPress-1>")
+        try:
+            self.mainCanvas.unbind("<ButtonPress-1>")
+        except Exception:
+            pass
         #binds function 'backtoHome' to 'mainCanvas' when the left click is made twice
         self.mainCanvas.bind("<Double-Button-1>", self.backtoHome)
         if not self.has_activeLot:
@@ -1250,16 +1255,477 @@ class FindMeParkingApp(Tk):
     def UserSettings(self):
         self.userLabelButton.config( command = lambda : self.closeUserSettings(),)
         self.userPopupLabel = Canvas(self.mainCanvas, bg = "spring green", highlightbackground="gray40")
-        self.userPopupLabel.place(x = int(self.mainCanvas.winfo_reqwidth() /2), y = 20, width = 130, height = 140)
+        self.userPopupLabel.place(x = int(self.mainCanvas.winfo_reqwidth() /2), y = 20, width = 130, height = 110)
         self.userPopupLabel.create_text(65,20,font = ('bold', 10), text = f"Welcome {self.fname}", justify = "center", fill = "gray14")
         self.userPopupLabel.create_text(65,35,font = ('bold', 8), text = f"{self.email}", justify = "center", fill = "gray66")
         
-        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "previous bookings", fg = "gray16", activebackground="medium spring green", activeforeground="gray16",).place(x = 5, y = 45, height = 30, width = 120)
+        #Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "previous bookings", fg = "gray16", activebackground="medium spring green", activeforeground="gray16",).place(x = 5, y = 45, height = 30, width = 120)
         
-        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "user profile", fg = "gray16", activebackground="medium spring green", activeforeground="gray16",).place(x = 5, y = 75, height = 30, width = 120)
+        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "user profile", fg = "gray16", activebackground="medium spring green", activeforeground="gray16", command = lambda : self.viewProfile()).place(x = 5, y = 45, height = 30, width = 120)
         
-        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "log out", fg = "gray16", activebackground="medium spring green", activeforeground="gray16",).place(x = 5, y = 105, height = 30, width = 120)
+        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "log out", fg = "gray16", activebackground="medium spring green", activeforeground="gray16", command = lambda : self.logoutUser()).place(x = 5, y = 75, height = 30, width = 120)
+    
+    def logoutUser(self):
+        self.userPopupLabel.destroy()
+        self.userLabelButton.config(state = "disabled", command = lambda : self.UserSettings(), image = self.userLabel_image)
         
+        self.create_rectangle(self.mainCanvas, 0, 0, self.mainCanvas.winfo_reqwidth() - 4, self.mainCanvas.winfo_reqheight() - 4, fill='snow', alpha=.6, tags = "logout-blur")
+        
+        self.mini_mainCanvas()
+        
+        self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 40, text = "Logging Out", font = ('bold',30), tags = "logout-text",)
+        self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 100, text = self.fname, font = ('bold',30), tags = "logout-text",)      
+        self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 145, text = "Are You Sure?", font = ('bold',20), tags = "logout-text",)
+        
+        Button(self.userAccountCanvas, text = "LOGOUT", font = ('bold', 20), relief = "groove", command = lambda : self.logOut()).place(x = 25, y = 180)
+        Button(self.userAccountCanvas, text = "CANCEL", font = ('bold', 20), relief = "groove", command = lambda : self.cancelLogout()).place(x = 165, y = 180)
+    
+    def logOut(self):
+        self.userExists = False
+        self.has_activeLot = False
+        sleep(2)
+        try:
+            self.mainCanvas.destroy()
+        except Exception:
+            pass
+        
+        self.mainCanvas = Canvas(self.labelFrame, width = self.width - 20, height = self.height - 20, bg = "#ffffff")
+        self.mainCanvas.place(x = 0, y = 0)
+        
+        self.start() 
+    
+    def cancelLogout(self):
+        self.mainCanvas.delete("logout-blur")
+        self.userLabelButton.config(state = "normal",)
+        self.userAccountCanvas.destroy()
+    
+    def viewProfile(self):
+        try:
+            self.userLabelButton.config(state = "normal", command = lambda : self.UserSettings(), image = self.userLabel_image)
+        except Exception:
+            pass
+        try:
+            self.userPopupLabel.destroy()
+        except Exception:
+            pass
+        try:
+            self.getReadingButton.destroy()
+        except Exception:
+            pass
+        try:
+            self.mainCanvas.destroy()
+        except Exception:
+            pass
+        
+        self.mainCanvas = Canvas(self.labelFrame, width = self.width - 20, height = self.height - 20, bg = "#ffffff")
+        self.mainCanvas.place(x = 0, y = 0)
+        self.decorateCanvas(self.mainCanvas)
+        #light sea green, spring green, medium spring green, aquamarine, SpringGreen2, PaleGreen1, azure
+        self.create_rectangle(self.mainCanvas, 0, 0, self.mainCanvas.winfo_reqwidth() - 4, self.mainCanvas.winfo_reqheight() - 4, fill='snow', alpha=.6, tags = "user-profile-blur")
+        
+        pic_lbl = Label(self.mainCanvas, image=self.userLabel_image, bd = 0)
+        pic_lbl.place(x = self.mainCanvas.winfo_reqwidth() - pic_lbl.winfo_reqwidth() - 4, y = 4,)
+        
+        btn = Button(self.mainCanvas, text = "exit", font = ('bold',15), bg = self.from_rgb((214,255,214)), relief = "groove", command = lambda: self.saveUserProfile(),)
+        btn.place(x = self.mainCanvas.winfo_reqwidth() - pic_lbl.winfo_reqwidth() - 4, y = 64,)
+        
+        self.mainCanvas.create_text(int(self.mainCanvas.winfo_reqwidth() / 2), 80, text = "User Profile", font = ('bold',30), fill = "black", anchor = "center", tags = "user-profile")
+        self.editError = Label(self.mainCanvas,)
+        
+        #edit Firstname
+        self.mainCanvas.create_text(60, 130, text = "FirstName", font = ('bold',15), fill = "black", anchor = "n", tags = "user-profile")
+        self.fname_lbl = Label(self.mainCanvas, text = self.fname, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.fname_lbl.place(x = 10, y = 160)        
+        self.fname_lbl_edit = Label(self.mainCanvas, text = "edit", font = ('bold', 12, 'underline'), fg = "blue", bg = self.from_rgb((203,255,237)))
+        self.fname_lbl_edit.place(x = 120, y = 130)
+        self.fname_lbl_edit.bind("<ButtonPress-1>", self.edit_fname)
+        #edit Email
+        self.mainCanvas.create_text(40, 230, text = "Email", font = ('bold',15), fill = "black", anchor = "n", tags = "user-profile")
+        self.email_lbl = Label(self.mainCanvas, text = self.email, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.email_lbl.place(x = 10, y = 260)        
+        self.email_lbl_edit = Label(self.mainCanvas, text = "edit", font = ('bold', 12, 'underline'), fg = "blue", bg = self.from_rgb((153,253,214)))
+        self.email_lbl_edit.place(x = 120, y = 230)
+        self.email_lbl_edit.bind("<ButtonPress-1>", self.edit_email)
+        #edit ID
+        self.mainCanvas.create_text(65, 330, text = "Driver's ID", font = ('bold',15), fill = "black", anchor = "n", tags = "user-profile")
+        self.id_lbl = Label(self.mainCanvas, text = self.id, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.id_lbl.place(x = 10, y = 360)        
+        self.id_lbl_edit = Label(self.mainCanvas, text = "edit", font = ('bold', 12, 'underline'), fg = "blue", bg = self.from_rgb((153,255,203)))
+        self.id_lbl_edit.place(x = 120, y = 330)
+        self.id_lbl_edit.bind("<ButtonPress-1>", self.edit_id)
+        #edit Lastname
+        self.mainCanvas.create_text(250, 130, text = "LastName", font = ('bold',15), fill = "black", anchor = "n", tags = "user-profile")
+        self.lname_lbl = Label(self.mainCanvas, text = self.lname, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.lname_lbl.place(x = 200, y = 160)        
+        self.lname_lbl_edit = Label(self.mainCanvas, text = "edit", font = ('bold', 12, 'underline'), fg = "blue", bg = self.from_rgb((153,248,200)))
+        self.lname_lbl_edit.place(x = 310, y = 130)
+        self.lname_lbl_edit.bind("<ButtonPress-1>", self.edit_lname)
+        #edit Phone
+        self.mainCanvas.create_text(250, 230, text = "Contact #", font = ('bold',15), fill = "black", anchor = "n", tags = "user-profile")
+        self.phone_lbl = Label(self.mainCanvas, text = self.phone, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.phone_lbl.place(x = 200, y = 260)        
+        self.phone_lbl_edit = Label(self.mainCanvas, text = "edit", font = ('bold', 12, 'underline'), fg = "blue", bg = self.from_rgb((203, 255, 237)))
+        self.phone_lbl_edit.place(x = 310, y = 230)
+        self.phone_lbl_edit.bind("<ButtonPress-1>", self.edit_phone)
+        
+        self.mainCanvas.create_line(0, 410, self.mainCanvas.winfo_reqwidth(), 410, joinstyle = "bevel", tags = "user-profile")        
+        #CARD INFORMATION
+        self.card_info = Label(self.mainCanvas, text = "edit Card Info", font = ('bold', 12, 'underline'), fg = "blue", bg = self.from_rgb((165, 224, 221)))
+        self.card_info.place(x = 10, y = 440)
+        self.mainCanvas.create_text(45, 470, text = "Card #", font = ('bold',15), fill = "black", anchor = "n", tags = "user-profile")
+        card_no = str(self.card)
+        self.card_lbl = Label(self.mainCanvas, text = re.sub(".", "\u2022", card_no[:-4]) + card_no[-4:], font = ('bold', 15), width = len(card_no), height = 1, bg = "gray85")
+        self.card_lbl.place(x = 10, y = 500) 
+        self.mainCanvas.create_text(218, 470, text = "CVV", font = ('bold',15), fill = "black", anchor = "n", tags = "user-profile")
+        self.cvv_lbl = Label(self.mainCanvas, text = re.sub(".", "\u2022", str(self.cvv)), font = ('bold', 15), width = len(str(self.cvv)), height = 1, bg = "gray85")
+        self.cvv_lbl.place(x = 200, y = 500) 
+        self.mainCanvas.create_text(310, 470, text = "Expiry Date", font = ('bold',15), fill = "black", anchor = "n", tags = "user-profile")
+        self.date_lbl = Label(self.mainCanvas, text = f'{self.exp_month}/{self.exp_year}', font = ('bold', 15), width = 5, height = 1, bg = "gray85")
+        self.date_lbl.place(x = 280, y = 500)
+        self.card_info.bind("<ButtonPress-1>", self.edit_cardInfo)
+        
+        self.mainCanvas.create_line(0, 560, self.mainCanvas.winfo_reqwidth(), 560, joinstyle = "bevel", tags = "user-profile")
+        #Username
+        self.mainCanvas.create_text(60, 600, text = "UserName", font = ('bold', 15), tags = "user-profile")
+        self.username_lbl = Label(self.mainCanvas, text = self.username, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.username_lbl.place(x = 10, y = 620)        
+        self.username_lbl_edit = Label(self.mainCanvas, text = "edit", font = ('bold', 12, 'underline'), fg = "blue", bg = self.from_rgb((165,224,221)))
+        self.username_lbl_edit.place(x = 120, y = 590)
+        self.username_lbl_edit.bind("<ButtonPress-1>", self.edit_username)
+        #Password
+        self.mainCanvas.create_text(250, 590, text = "Password", font = ('bold',15), fill = "black", anchor = "n", tags = "user-profile")
+        self.password_lbl = Label(self.mainCanvas, text = re.sub(".", "\u2022", self.password), font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.password_lbl.place(x = 200, y = 620)        
+        self.password_lbl_edit = Label(self.mainCanvas, text = "edit", font = ('bold', 12, 'underline'), fg = "blue", bg = self.from_rgb((153,253,214)))
+        self.password_lbl_edit.place(x = 310, y = 590)
+        self.password_lbl_edit.bind("<ButtonPress-1>", self.edit_password)
+        
+        self.mainCanvas.bind("<ButtonPress-1>", self.clear_error)
+        
+    def saveUserProfile(self):
+        self.saveAccountInfo()
+        self.mainCanvas.unbind("<ButtonPress-1>")
+        try:
+            self.mainCanvas.delete("user-password")
+        except Exception:
+            pass
+        try:
+            self.mainCanvas.delete("user-profile")
+        except Exception:
+            pass
+        try:
+            self.mainCanvas.delete("user-profile-blur")
+        except Exception:
+            pass
+        self.mainCanvas.destroy()
+        self.mainCanvas = Canvas(self.labelFrame, width = self.width - 20, height = self.height - 20, bg = "#ffffff")
+        self.mainCanvas.place(x = 0, y = 0)
+        self.createMainButton()
+    
+    def edit_password(self, event):
+        self.editError.config(text = "", fg = "red2")
+        self.password_lbl_edit.unbind("<ButtonPress-1>")
+        self.password_lbl_edit.bind("<ButtonPress-1>", self.save_password)
+        self.password_lbl_edit.config(text = "save")
+        self.password_lbl.destroy()
+        self.mainCanvas.create_text(280, 621, text = "Confirm Previous Password", font = ('bold',10), fill = "black", anchor = "n", tags = "user-password")
+        self.confirmpassword_Entry = Entry(self.mainCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',12))
+        self.confirmpassword_Entry.place(x = 200, y = 640, width = 160, height = 30)
+        self.mainCanvas.create_text(260, 671, text = "Enter New Password", font = ('bold',10), fill = "black", anchor = "n", tags = "user-password")
+        self.newpassword_Entry = Entry(self.mainCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',12))
+        self.newpassword_Entry.place(x = 200, y = 690, width = 160, height = 30)        
+
+    def save_password(self, event):
+        if len(self.confirmpassword_Entry.get()) != 0:
+            if len(self.confirmpassword_Entry.get()) >= 8:
+                if self.confirmpassword_Entry.get() == self.password:
+                    if len(self.newpassword_Entry.get()) != 0:
+                        if len(self.newpassword_Entry.get()) >= 8:
+                            if self.newpassword_Entry.get() != self.password:
+                                self.password = self.newpassword_Entry.get()
+                                self.editError.config(text = "Password Updated", fg = "medium blue")
+                                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100) 
+                            else:
+                                self.editError.config(text = "Error saving 'Password' 6", fg = "red2")
+                                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+                        else:
+                            self.editError.config(text = "Error saving 'Password' 5", fg = "red2")
+                            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)                           
+                    else:
+                        self.editError.config(text = "Error saving 'Password' 4", fg = "red2")
+                        self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+                else:
+                    self.editError.config(text = "Error saving 'Password' 3", fg = "red2")
+                    self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+            else:
+                self.editError.config(text = "Error saving 'Password' 2", fg = "red2")
+                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)                               
+        else:
+            self.editError.config(text = "Error saving 'Password' 1", fg = "red2")
+            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        self.password_lbl_edit.unbind("<ButtonPress-1>")
+        self.password_lbl_edit.bind("<ButtonPress-1>", self.edit_password)
+        self.password_lbl_edit.config(text = "edit")
+        self.mainCanvas.delete("user-password")
+        self.confirmpassword_Entry.destroy()
+        self.newpassword_Entry.destroy()
+        self.password_lbl = Label(self.mainCanvas, text = re.sub(".", "\u2022", self.password), font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.password_lbl.place(x = 200, y = 620)
+    
+    def edit_username(self, event):
+        self.editError.config(text = "", fg = "red2")
+        self.username_lbl_edit.unbind("<ButtonPress-1>")
+        self.username_lbl_edit.bind("<ButtonPress-1>", self.save_username)
+        self.username_lbl_edit.config(text = "save")
+        self.username_lbl.destroy()
+        self.editusername_Entry = Entry(self.mainCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',12))
+        self.editusername_Entry.place(x = 10, y = 620, width = 160, height = 30)
+        self.editusername_Entry.insert(0, self.username)
+        
+    def save_username(self, event):
+        if len(self.editusername_Entry.get()) != 0:
+            self.username = self.editusername_Entry.get()
+            self.editError.config(text = "Username Updated", fg = "medium blue")
+            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        else:
+            self.editError.config(text = "Error saving 'UserName'", fg = "red2")
+            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        self.username_lbl_edit.unbind("<ButtonPress-1>")
+        self.username_lbl_edit.bind("<ButtonPress-1>", self.edit_username)
+        self.username_lbl_edit.config(text = "edit")
+        self.editusername_Entry.destroy()
+        self.username_lbl = Label(self.mainCanvas, text = self.username, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.username_lbl.place(x = 10, y = 620)
+      
+    def edit_cardInfo(self, event):
+        self.card_info.config(text = "save Card Info")
+        self.card_info.unbind("<ButtonPress-1>")
+        self.card_info.bind("<ButtonPress-1>", self.save_cardInfo)
+        self.card_lbl.destroy()
+        self.cvv_lbl.destroy()
+        self.date_lbl.destroy()
+        
+        self.editcard_Entry = Entry(self.mainCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',12))
+        self.editcard_Entry.place(x = 10, y = 500, width = 170, height = 30)
+        
+        self.editcvv_Entry = Entry(self.mainCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',12))
+        self.editcvv_Entry.place(x = 200, y = 500, width = 40, height = 30)
+
+        self.editmonth_Combo = Combobox(self.mainCanvas, font = ('bold', 10), state = "readonly")        
+        self.editmonth_Combo['values'] = [x for x in self.months]
+        self.editmonth_Combo.config(font = "None 15 normal", )                
+        self.editmonth_Combo.place(x = 260, y = 500, height = 30, width = 50)
+        self.option_add("*TCombobox*Listbox*Font", font.Font(family = "Helvetica", size = 10))
+        
+        cur_year = int(strftime('%y'))
+        self.edityear_Combo = Combobox(self.mainCanvas, font = ('bold', 10), state = "readonly")        
+        self.edityear_Combo['values'] = [x for x in range(cur_year,100)]
+        self.edityear_Combo.config(font = "None 15 normal", )
+        self.edityear_Combo.place(x = 310, y = 500, height = 30, width = 50)
+        self.option_add("*TCombobox*Listbox*Font", font.Font(family = "Helvetica", size = 10))
+
+    def save_cardInfo(self, event):
+        if len(self.editcard_Entry.get()) != 0:
+            regex = r'^\d{15,16}$'
+            if(re.fullmatch(regex,self.editcard_Entry.get())):
+                if len(self.editcvv_Entry.get()) != 0:
+                    regex = r'^\d{3,4}$'
+                    if(re.fullmatch(regex,self.editcvv_Entry.get())):
+                        if (self.editmonth_Combo.get()) != "":
+                            if (self.edityear_Combo.get()) != "":
+                                eyear = strftime('%y')
+                                emonth = strftime('%m')
+                                if (int(self.editmonth_Combo.get()) >= int(emonth) and int(self.edityear_Combo.get()) >= int(eyear)) or (int(self.editmonth_Combo.get()) <= int(emonth) and int(self.edityear_Combo.get()) > int(eyear)):
+                                    self.card = int(self.editcard_Entry.get())
+                                    self.cvv = self.editcvv_Entry.get()
+                                    self.exp_month = int(self.editmonth_Combo.get())
+                                    self.exp_year = int(self.edityear_Combo.get())
+                                    self.editError.config(text = "Card Info Updated", fg = "medium blue")
+                                    self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+                                else:
+                                    self.editError.config(text = "Error saving 'DATE'", fg = "red2")
+                                    self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+                            else:
+                                self.editError.config(text = "Error saving 'YEAR'", fg = "red2")
+                                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+                        else:
+                            self.editError.config(text = "Error saving 'MONTH'", fg = "red2")
+                            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+                    else:
+                        self.editError.config(text = "Error saving 'CVV' 2", fg = "red2")
+                        self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+                else:
+                    self.editError.config(text = "Error saving 'CVV' 1", fg = "red2")
+                    self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+            else:
+                self.editError.config(text = "Error saving 'Card #' 2", fg = "red2")
+                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        else:
+            self.editError.config(text = "Error saving 'Card #' 1", fg = "red2")
+            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        
+        self.card_info.config(text = "edit Card Info")
+        self.card_info.unbind("<ButtonPress-1>")
+        self.card_info.bind("<ButtonPress-1>", self.edit_cardInfo)
+        
+        self.editcard_Entry.destroy()
+        self.editcvv_Entry.destroy()
+        self.editmonth_Combo.destroy()
+        self.edityear_Combo.destroy()
+        
+        card_no = str(self.card)
+        self.card_lbl = Label(self.mainCanvas, text = re.sub(".", "\u2022", card_no[:-4]) + card_no[-4:], font = ('bold', 15), width = len(card_no), height = 1, bg = "gray85")
+        self.card_lbl.place(x = 10, y = 500) 
+        self.cvv_lbl = Label(self.mainCanvas, text = re.sub(".", "\u2022", str(self.cvv)), font = ('bold', 15), width = len(str(self.cvv)), height = 1, bg = "gray85")
+        self.cvv_lbl.place(x = 200, y = 500)
+        self.date_lbl = Label(self.mainCanvas, text = f'{self.exp_month}/{self.exp_year}', font = ('bold', 15), width = 5, height = 1, bg = "gray85")
+        self.date_lbl.place(x = 280, y = 500)
+
+    def edit_id(self, event):
+        self.id_lbl_edit.unbind("<ButtonPress-1>")
+        self.id_lbl_edit.bind("<ButtonPress-1>", self.save_id)
+        self.id_lbl_edit.config(text = "save")
+        self.id_lbl.destroy()
+        self.editid_Entry = Entry(self.mainCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',12))
+        self.editid_Entry.place(x = 10, y = 360, width = 160, height = 30)
+        self.editid_Entry.insert(0, self.id)
+    
+    def save_id(self, event):
+        if len(self.editid_Entry.get()) != 0:
+            regex = r'^\d{9}$'
+            if(re.fullmatch(regex,self.editid_Entry.get())):
+                self.id = self.editid_Entry.get()
+                self.editError.config(text = "Driver's ID Updated", fg = "medium blue")
+                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+            else:
+                self.editError.config(text = "Error saving 'Driver's ID'", fg = "red2")
+                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        else:
+            self.editError.config(text = "Error saving 'Driver's ID'", fg = "red2")
+            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        self.id_lbl_edit.unbind("<ButtonPress-1>")
+        self.id_lbl_edit.bind("<ButtonPress-1>", self.edit_id)
+        self.id_lbl_edit.config(text = "edit")
+        self.editid_Entry.destroy()
+        self.id_lbl = Label(self.mainCanvas, text = self.id, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.id_lbl.place(x = 10, y = 360) 
+    
+    def edit_phone(self, event): 
+        self.phone_lbl_edit.unbind("<ButtonPress-1>")
+        self.phone_lbl_edit.bind("<ButtonPress-1>", self.save_phone)
+        self.phone_lbl_edit.config(text = "save")
+        self.phone_lbl.destroy()
+        self.editphone_Entry = Entry(self.mainCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',12))
+        self.editphone_Entry.place(x = 200, y = 260, width = 160, height = 30)
+        self.editphone_Entry.insert(0, self.phone)
+        
+    def save_phone(self, event):
+        if len(self.editphone_Entry.get()) != 0:
+            regex = r'^\d{1,4}\d{7}$'
+            if(re.fullmatch(regex, self.editphone_Entry.get())):
+                self.phone = self.editphone_Entry.get()
+                self.editError.config(text = "Contact # Updated", fg = "medium blue")
+                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+            else:
+                self.editError.config(text = "Error saving 'Contact #'", fg = "red2")
+                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        else:
+            self.editError.config(text = "Error saving 'Contact #'", fg = "red2")
+            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        self.phone_lbl_edit.unbind("<ButtonPress-1>")
+        self.phone_lbl_edit.bind("<ButtonPress-1>", self.edit_phone)
+        self.phone_lbl_edit.config(text = "edit")
+        self.editphone_Entry.destroy()
+        self.phone_lbl = Label(self.mainCanvas, text = self.phone, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.phone_lbl.place(x = 200, y = 260) 
+   
+    def edit_email(self, event): 
+        self.email_lbl_edit.unbind("<ButtonPress-1>")
+        self.email_lbl_edit.bind("<ButtonPress-1>", self.save_email)
+        self.email_lbl_edit.config(text = "save")
+        self.email_lbl.destroy()
+        self.editemail_Entry = Entry(self.mainCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',12))
+        self.editemail_Entry.place(x = 10, y = 260, width = 160, height = 30)
+        self.editemail_Entry.insert(0, self.email)
+        
+    def save_email(self, event):
+        if len(self.editemail_Entry.get()) != 0:
+            regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+            if(re.fullmatch(regex, self.editemail_Entry.get())):
+                self.email = self.editemail_Entry.get()
+                self.editError.config(text = "Email Updated", fg = "medium blue")
+                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+            else:
+                self.editError.config(text = "Error saving 'Email'", fg = "red2")
+                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        else:
+            self.editError.config(text = "Error saving 'Email'", fg = "red2")
+            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        self.email_lbl_edit.unbind("<ButtonPress-1>")
+        self.email_lbl_edit.bind("<ButtonPress-1>", self.edit_email)
+        self.email_lbl_edit.config(text = "edit")
+        self.editemail_Entry.destroy()
+        self.email_lbl = Label(self.mainCanvas, text = self.email, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.email_lbl.place(x = 10, y = 260) 
+
+    def edit_lname(self, event):
+        self.editError.config(text = "", fg = "red2")
+        self.lname_lbl_edit.unbind("<ButtonPress-1>")
+        self.lname_lbl_edit.bind("<ButtonPress-1>", self.save_lname)
+        self.lname_lbl_edit.config(text = "save")
+        self.lname_lbl.destroy()
+        self.editlname_Entry = Entry(self.mainCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',12))
+        self.editlname_Entry.place(x = 200, y = 160, width = 160, height = 30)
+        self.editlname_Entry.insert(0, self.lname)
+        
+    def save_lname(self, event):
+        if len(self.editlname_Entry.get()) != 0:
+            self.lname = self.editlname_Entry.get()
+            self.editError.config(text = "LastName Updated", fg = "medium blue")
+            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        else:
+            self.editError.config(text = "Error saving 'Lastname'", fg = "red2")
+            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        self.lname_lbl_edit.unbind("<ButtonPress-1>")
+        self.lname_lbl_edit.bind("<ButtonPress-1>", self.edit_lname)
+        self.lname_lbl_edit.config(text = "edit")
+        self.editlname_Entry.destroy()
+        self.lname_lbl = Label(self.mainCanvas, text = self.lname, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.lname_lbl.place(x = 200, y = 160)
+    
+    def edit_fname(self, event):
+        self.editError.config(text = "", fg = "red2")
+        self.fname_lbl_edit.unbind("<ButtonPress-1>")
+        self.fname_lbl_edit.bind("<ButtonPress-1>", self.save_fname)
+        self.fname_lbl_edit.config(text = "save")
+        self.fname_lbl.destroy()
+        self.editfname_Entry = Entry(self.mainCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',12))
+        self.editfname_Entry.place(x = 10, y = 160, width = 160, height = 30)
+        self.editfname_Entry.insert(0, self.fname)
+        
+    def save_fname(self, event):
+        if len(self.editfname_Entry.get()) != 0:
+            self.fname = self.editfname_Entry.get()
+            self.editError.config(text = "FirstName Updated", fg = "medium blue")
+            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        else:
+            self.editError.config(text = "Error saving 'Firstname'", fg = "red2")
+            self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+        self.fname_lbl_edit.unbind("<ButtonPress-1>")
+        self.fname_lbl_edit.bind("<ButtonPress-1>", self.edit_fname)
+        self.fname_lbl_edit.config(text = "edit")
+        self.editfname_Entry.destroy()
+        self.fname_lbl = Label(self.mainCanvas, text = self.fname, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
+        self.fname_lbl.place(x = 10, y = 160)
+
+    def clear_error(self, event):
+        self.editError.config(text = "", fg = "red2")
+ 
+    def from_rgb(self, rgb):
+        """translates an rgb tuple of int to a tkinter friendly color code"""
+        r, g, b = rgb
+        return f'#{r:02x}{g:02x}{b:02x}'        
+ 
     #this function is called when 'userLabelButton' is clicked an even number of times
     def closeUserSettings(self):
         #'userLabelButton' has its command changed to original function

@@ -1,3 +1,18 @@
+import os
+def setPath():
+    # get the current working directory
+    return os.getcwd().replace('\\','/')
+#set path for all files used
+#loading_gif = f"{setPath()}/croppedImages/"
+rel_path = f"{setPath()}/ParkingLots/"
+##user_profile = f"{setPath()}/User/"
+##dummy_entrance_image = f"{setPath()}/A4_entrance.png"
+#dummy_exit_image = f"{setPath()}/A4_exit.png"
+#app_screen = f"{setPath()}/app_screen.jpg"
+#cat = f"{setPath()}/cat.png"
+#no_user = f"{setPath()}/noUser.png"
+
+
 folderpath = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/"
 image_name = r"C:/Users/DELL/Desktop/MyJourney/Python/Parking/trial/carParkImg.png"
 video_name = r"C:/Users/DELL/Desktop/MyJourney/Python/Parking/New folder/carPark.mp4"
@@ -33,7 +48,7 @@ spot_names = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/spotNames.txt"
 amount_available = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/demoParking.txt"
 #text='☰'
 btn_image = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/create_button_light.png"
-rel_path = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Monitor/ParkingLots/"
+#rel_path = r"C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Monitor/ParkingLots/"
 
 """
 import os, os.path
