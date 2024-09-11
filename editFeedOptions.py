@@ -187,10 +187,10 @@ class addFeed(Frame):
         self.contactEmail_Entry_BlankLabel = Label( self.contactPerson_Labelframe, text = "", font = ('bold', 10) , fg = "red")
         
         #------ BUTTONS -----------------------------------------------------------------------------------------------------
-        self.acceptInfo_Button = Button(self, text = "Save", font = ('bold', 15), bd= 0, highlightthickness = 0, border = 0, command = lambda: self.check_andSave())
+        self.acceptInfo_Button = Button(self, text = "Save", font = ('bold', 15), bd = 0, highlightthickness = 0, border = 0, command = lambda: self.check_andSave())
         self.acceptInfo_Button.place(x = self.__midpointAcross - 160, y = 553, width = 150, height = 40)
         
-        self.resetInfo_Button = Button(self, text = "Reset", font = ('bold', 15), fg = "red", bd= 0, highlightthickness = 0, border = 0, command = lambda : self.resetValues())
+        self.resetInfo_Button = Button(self, text = "Reset", font = ('bold', 15), fg = "red", bd = 0, highlightthickness = 0, border = 0, command = lambda : self.resetValues())
         self.resetInfo_Button.place(x = self.__midpointAcross + 10, y = 553, width = 150, height = 40)
     
     def check_andSave(self):
@@ -300,7 +300,7 @@ class editFeed(Frame):
         self.chooseFeed_Label = Label(self, text = "Select a Feed to edit", font = ('bold', 17, 'underline'), fg = "black", bg = parent_colour,)
         self.chooseFeed_Label.place(x = self.__midpointAcross - 330, y = 13)
         self.chooseFeed_Combo = Combobox(self, width = 40, font = ('bold', 10), state = "readonly")        
-        self.chooseFeed_Combo['values'] = [x for x in master.listOfParishes]
+        self.chooseFeed_Combo['values'] = [x[0] for x in sources]#master.listOfParishes]
         self.chooseFeed_Combo.config(font = "None 15 normal", )
         self.chooseFeed_Combo.current(0)
         self.chooseFeed_Combo.place(x = 500, y = 13)

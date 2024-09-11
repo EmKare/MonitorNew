@@ -2,7 +2,7 @@ from tkinter import Tk, ttk, Button, LabelFrame, Canvas, Label, NW, Scrollbar, F
 from Parking import ParkingLot
 from getParkingLot import ParkingLotInfo, GetLot
 from PIL import ImageTk, Image
-import files as files
+import files
 from random import choice
 import asyncio
 

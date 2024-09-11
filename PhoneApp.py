@@ -17,7 +17,7 @@ class FindMeParkingApp(Tk):
         #set window width and height
         self.width, self.height = 400, 750
         #set window geometry, along with window placement
-        self.geometry(f'{self.width}x{self.height}+1120+0')
+        self.geometry(f'{self.width}x{self.height}+300+0')
         #window cannot be resized
         self.resizable(False, False)
         self.title("Find Me Parking App")
@@ -114,8 +114,8 @@ class FindMeParkingApp(Tk):
                     self.cvv = lines[9].strip('\n')
                     self.exp_month = lines[10].strip('\n')
                     self.exp_year = lines[11].strip('\n')
-                    self.userExists = True
-                    #self.userExists = False
+                    #self.userExists = True
+                    self.userExists = False
                 # else:
                     pass
         except:

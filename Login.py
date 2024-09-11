@@ -1,4 +1,6 @@
 from tkinter import Tk, Button, Label, Entry, LabelFrame, END
+from PIL import ImageTk, Image
+import files
 
 #global userDetails
 userDetails = {}
@@ -11,11 +13,13 @@ class window(Tk):
         self.__width, self.__height, self.__left, self.__top = 0, 0, 0, 0
         self.__title = ""
         self.resizable(False, False)
+        icon = Image.open(files.icon)
+        photo = ImageTk.PhotoImage(icon)
+        self.wm_iconphoto(False, photo)
         self.setWindow()
         self.labelFrame = LabelFrame(self, text = "",)
-        self.labelFrame.place(x = 5, y = 5, width = self.get_Width() - 10, height = self.get_Height() - 10)    
+        self.labelFrame.place(x = 5, y = 5, width = self.get_Width() - 10, height = self.get_Height() - 10)
         
-    
     def printuserDetails(self):
         for key, val in userDetails.items():
             print(f'Key: {key} - Value: {val}')
@@ -68,7 +72,7 @@ class Login(window):
         self.__loginTries = 3
         self.set_Width(400)
         self.set_Height(500)
-        self.set_Left(300)
+        self.set_Left(600)
         self.set_Top(50)
         self.set_Title("Login")        
         self.setWindow()
@@ -172,7 +176,7 @@ class Registration(window):
         
         self.set_Width(400)
         self.set_Height(600)
-        self.set_Left(300)
+        self.set_Left(600)
         self.set_Top(50)
         self.set_Title("Registration")        
         self.setWindow()
@@ -268,7 +272,7 @@ class Registration(window):
         self.passwordEntry.delete(0, END)
         self.reenterpasswordEntry.delete(0, END)
         
-Login()
+#Login()
     
         
 

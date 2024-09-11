@@ -1,6 +1,9 @@
-from tkinter import Tk, Label, Button, Toplevel, font, LabelFrame, Canvas, PhotoImage, Frame, mainloop, NW
+from tkinter import Tk, Label, Button, Toplevel, font, LabelFrame, Canvas, PhotoImage, Frame, mainloop, NW, Entry, END
+from tkintermapview import TkinterMapView
+from geopy.geocoders import Nominatim
 from urllib.request import urlopen
 from tkinter.ttk import Combobox
+
 from tkinter import ttk as ttk
 from PIL import ImageTk, Image
 from utils import rescaleFrame
@@ -21,8 +24,11 @@ class App(Tk):
         #setting up the window
         self.geometry(f"{self.__window_bredth}x{self.__window_length}+50+10")
         self.resizable(False, False)
-        self.title(f"Find Me Parking App - User: {username}")
+        self.title(f"Group 3 : Find Me Parking App - User: {username}")
         self.timeBool = True
+        icon = Image.open(files.icon)
+        photo = ImageTk.PhotoImage(icon)
+        self.wm_iconphoto(False, photo)
         #-- getting streams --
         self.vids = files.sources
         #SideMenu Window -------------------------------------------------------------------------------------------------------
@@ -52,7 +58,7 @@ class App(Tk):
         #dictionary of frames
         self.listOfFrames = {}
         #key = class, value is the class with the frame in constructor
-        for classes in (EditWindow, ViewWindow, AddFeed, ViewMedia, Settings):
+        for classes in (EditWindow, ViewWindow, AddFeed, ViewMap, Settings):
             theframe = classes(parent = mainWindowFrame, master = self, sources= self.vids)
             self.listOfFrames[classes] = theframe
             theframe.grid(row = 0, column = 0, sticky = "nsew")
@@ -66,10 +72,10 @@ class App(Tk):
         self.addFeedDataWindowButton = Button(self.sidemenuFrame, text = "Add Feeds", font = ('calibri', 18), fg = "black", bd= 1, command=lambda: self.show_frame(AddFeed))
         self.addFeedDataWindowButton.place(x = 0, y = 304, width = self.sidemenuFrame.winfo_reqwidth(), height = (self.sidemenuFrame.winfo_reqheight() / 5))
         
-        self.viewDataWindowButton = Button(self.sidemenuFrame, text = "View Data", font = ('calibri', 18), fg = "black", bd= 1, command=lambda: self.show_frame(ViewMedia))
-        self.viewDataWindowButton.place(x = 0, y = 456, width = self.sidemenuFrame.winfo_reqwidth(), height = (self.sidemenuFrame.winfo_reqheight() / 5))
+        self.viewMapWindowButton = Button(self.sidemenuFrame, text = "View Map", font = ('calibri', 18), fg = "black", bd= 1, command=lambda: self.show_frame(ViewMap))
+        self.viewMapWindowButton.place(x = 0, y = 456, width = self.sidemenuFrame.winfo_reqwidth(), height = (self.sidemenuFrame.winfo_reqheight() / 5))
         
-        self.settingsWindowButton = Button(self.sidemenuFrame, text = "Settings", font = ('calibri', 18), fg = "black", bd= 1, command=lambda: self.show_frame(Settings))
+        self.settingsWindowButton = Button(self.sidemenuFrame, text = "Settings", font = ('calibri', 18), fg = "black", bd= 1, command=lambda: self.show_frame(Settings), state = "disabled")
         self.settingsWindowButton.place(x = 0, y = 608, width = self.sidemenuFrame.winfo_reqwidth(), height = (self.sidemenuFrame.winfo_reqheight() / 5))
         #Title Window -----------------------------------------------------------------------------------------------------------
         #Name of Parking Lot being monitored
@@ -84,7 +90,7 @@ class App(Tk):
         #-----------------------------------------------------------------------------------------------------------------------
 
         #Beginning frame
-        self.show_frame(AddFeed)  
+        self.show_frame(ViewMap)  
         #starts clock module
         self.getTime()      
         #starts tkinter
@@ -144,8 +150,8 @@ class EditWindow(Frame):
         self.__listOfFeeds = sources
         
         self.listLength = len(self.__listOfFeeds)
-        #print(f' EditWindow: {self.listLength}')
-        self.__listOfFeeds = ["MegaMart Parking Lot #1", "Sagicor Life Building Parking Lot", "NewLife Mall #3 Parking Lot"] #[x[0] for x in sources]
+        #print(f' EditWindow: {self.listLength}') Digicel Main Parking Lot
+        self.__listOfFeeds = ["MegaMart Parking Lot East", "NCB Parking Lot", "Sagicor Parking Lot",] #[x[0] for x in sources]
         #Get positions
         self.posList = self.getFileSetArray()
         
@@ -474,6 +480,13 @@ class EditWindow(Frame):
     
     def closeVideo(self):
         try:
+            f = open("C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Monitor/ParkingLots/ParkingLot1/ParkingLot11.txt", "w")
+            for x, y in self.__lotNames.items():
+                f.write(f'#{y}\n')
+            f.close()
+        except Exception:
+            pass
+        try:
             self.cap.release()
         except Exception:
             pass
@@ -519,6 +532,13 @@ class EditWindow(Frame):
             f = open("C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/spotNames.txt", "w")
             for x, y in self.__lotNames.items():
                 f.write(f'{x}#{y}\n')
+            f.close()
+        except Exception:
+            pass
+        try:
+            f = open("C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Monitor/ParkingLots/ParkingLot1/ParkingLot11.txt", "w")
+            for x, y in self.__lotNames.items():
+                f.write(f'#{y}\n')
             f.close()
         except Exception:
             pass
@@ -630,7 +650,7 @@ class AddFeed(Frame):
         self.tab_2 = Button(self.tabs, text = "Edit Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0, command = lambda: self.show_frame(editFeed,2))
         self.tab_2.place(x = int(self.tabs.winfo_reqwidth() / 3), y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 1)
         
-        self.tab_3 = Button(self.tabs, text = "Delete Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0,  command = lambda: self.show_frame(deleteFeed,3))
+        self.tab_3 = Button(self.tabs, text = "Delete Feed", font = ('calibri', 18), fg = "black", bd= 0, highlightthickness = 0,  command = lambda: self.show_frame(deleteFeed,3), state = "disabled")
         self.tab_3.place(x = int(self.tabs.winfo_reqwidth() / 3) * 2, y = 0, height = self.tabs.winfo_reqheight() - 1, width = int(self.tabs.winfo_reqwidth() / 3) - 1)
         
         self.show_frame(addFeed,1)        
@@ -650,19 +670,228 @@ class AddFeed(Frame):
             self.tab_1.config(border=2)
             self.tab_2.config(border=2)
             self.tab_3.config(border=0)
-  
-class ViewMedia(Frame):
+ 
+class ViewMap(Frame):
     def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
+        import openrouteservice as ors
+        self.client = ors.Client(key='5b3ce3597851110001cf62480f6929fa14f1415b865522ca5d94fb50')
         self.config(bg="lightblue")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
+        self.entryDefaultText = "                          search"
+        self.entryDefaultTextColour = "lightgray"
+        self.has_defaultText = False
+        self.hasRoute = False
+        self.entry_width = 240
+        self.searchFrame_width = 320
+        self.searchFrame_height = 34
+        self.locationService = Nominatim(user_agent="Geopy Library")
+        self.setInOrder()
+    
+    #this function is called to create a canvas to display the map on
+    def setInOrder(self, location = None):
+        self.mapCanvas = Canvas(self, bg = "red")
+        self.mapCanvas.place(x = 1, y = 1, width = self.__window_bredth - 2, height = self.__window_length - 2,)
+        self.createMap(location)
+        self.createSearch()
+    
+    #this function creates the map on the canvas using 'TkinterMapView'  
+    def createMap(self, location = None):   
+        self.map_widget = TkinterMapView(self.mapCanvas, width = self.__window_bredth - 2, height = self.__window_length - 2, corner_radius=2)
+        self.map_widget.place(x = 1, y = 1,)        
+        self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom = 22)  # google normal
+        #if location is None:
+        self.map_widget.set_position(18.1489364, -77.3290934, marker = False) #18.007943,-76.781315
+        #else:
+        #    self.map_widget.set_position(location.latitude, location.longitude, marker = True)
+        #    self.map_widget.set_marker(location.latitude, location.longitude, text = location.address, text_color = "black")
+        self.map_widget.set_zoom(9)
+    
+    #this function creates the default widgets needed to navigate the map    
+    def createSearch(self):
+        #creates a frame for search widgets
+        self.searchFrame = Canvas(self.mapCanvas, width = self.searchFrame_width, height = self.searchFrame_height, bg = "#ffffff", bd = 0, borderwidth = 0, highlightthickness = 0)
+        self.searchFrame.place(x = self.__midpointAcross - (self.searchFrame_width / 2), y = 20,)
+        #creates a black rectange around frame
+        self.searchFrame.create_rectangle(0,0,self.searchFrame_width-1,self.searchFrame_height-1,outline = "black", width = 1, tags="rectangle")
+        #creates an expand button that will be toggled for 'search a location' or 'map from - to'
+        self.expandButton = Button(self.searchFrame, text = ">", font = ('calibri', 13, 'bold'), relief = "flat", bg = "lightgray", activebackground = "lightgray", bd= 0, highlightthickness = 0, border = 0, command = lambda : self.expandEntry(), )
+        self.expandButton.place(x = 1 , y = 1, width = 20, height = 32)
+        #creates an Entry to input search data
+        self.findLocation = Entry(self.searchFrame, bd = 0, bg = "#ffffff", font = ('bold',10), relief = "flat", highlightthickness = 0, border = 0,)# foreground = self.entryDefaultTextColour)
+        #self.has_defaultText = True
+        #self.findLocation.icursor(0)
+        self.findLocation.place(x = 25, y = 1, width = self.entry_width - 1, height = 32)
+        #self.findLocation.bind('<FocusIn>', self.click_In)        
+        #self.findLocation.insert(0,self.entryDefaultText)
+        #creates a button to clear the data entered in the Entry
+        self.clearButton = Button(self.searchFrame, text = "x", relief = "flat", bg = "#ffffff", activebackground = "#ffffff", bd= 0, highlightthickness = 0, border = 0, command = lambda : self.clearEntry(), )
+        self.clearButton.place(x = self.entry_width + 24 , y = 1, width = 20, height = 32)
+        #creates a search button to search for the data entered into the Entry
+        self.searchButton = Button(self.searchFrame, text = "find", relief = "flat", bg = "lightgray", activebackground = "lightgray", bd= 0, highlightthickness = 0, border = 0, command = lambda : self.searchMap())
+        self.searchButton.place(x = self.searchFrame_width - 36, y = 1, width = 35, height = 32)        
+        #create a "search" label
+        self.searchlabel = Label(self.searchFrame, text = "search", font = ('calibri', 8), bg = "#ffffff", fg = "lightgray")
+        self.searchlabel.place(x = self.searchFrame_width / 2 - self.searchlabel.winfo_reqwidth(), y = 1, height = 8)
+    
+    #this function is called if the expand button is pressed. it changes the search widget into a 'from-to' widget
+    def expandEntry(self):
+        #expand search canvas and draw new rectange
+        self.searchFrame.config(height = self.searchFrame_height * 2)
+        self.searchFrame.create_rectangle(0,self.searchFrame_height-1,self.searchFrame_width-1,(self.searchFrame_height*2)-1,outline = "black", width = 1, tags="rectangle2")
+        #expand height of expand button, and change text and command
+        self.expandButton.config(text = "^", command = lambda : self.reduceEntry(),)        
+        self.expandButton.place(x = 1 , y = 1, width = 20, height = (32 * 2) + 2)
+        #create new entry for "to" position
+        self.findToLocation = Entry(self.searchFrame, bd = 0, bg = "#ffffff", font = ('bold',10), relief = "flat", highlightthickness = 0, border = 0,)# foreground = self.entryDefaultTextColour)
+        self.findToLocation.place(x = 25, y = 1 + self.searchFrame_height, width = self.entry_width - 1, height = 32)
+        #create new clear button
+        self.clearButton2 = Button(self.searchFrame, text = "x", relief = "flat", bg = "#ffffff", activebackground = "#ffffff", bd= 0, highlightthickness = 0, border = 0, command = lambda : self.clearToEntry(), )
+        self.clearButton2.place(x = self.entry_width + 24 , y = 1 + self.searchFrame_height, width = 20, height = 32)
+        #expand height of search button, and configure text and command
+        self.searchButton.config(text = "route", command = lambda : self.mapRoute() ) 
+        self.searchButton.place(x = self.searchFrame_width - 36, y = 1, width = 35, height = (32 * 2) + 2)
+        #destroy "search" label
+        self.searchlabel.destroy()
+        #create a "from" label
+        self.fromlabel = Label(self.searchFrame, text = "from", font = ('calibri', 8), bg = "#ffffff", fg = "lightgray")
+        self.fromlabel.place(x = self.searchFrame_width / 2 - self.fromlabel.winfo_reqwidth(), y = 1, height = 8)
+        #create a "to" label
+        self.tolabel = Label(self.searchFrame, text = "to   ", font = ('calibri', 8), bg = "#ffffff", fg = "lightgray")
+        self.tolabel.place(x = self.searchFrame_width / 2 - self.tolabel.winfo_reqwidth(), y = 1 + self.searchFrame_height, height = 8)
         
-        label = Label(self, text="View Data", fg="black")
-        label.place(x = (parent.winfo_reqwidth() / 2) - int(label.winfo_reqwidth() / 2), 
-                    y = (parent.winfo_reqheight() / 2) - int(label.winfo_reqheight() / 2))
-        label.place(x = 600, y = 200)
+    def mapRoute(self):
+        #if the route bool is false, then there is no active routes
+        if not self.hasRoute:
+            #if there is data in the entry
+            if len(self.findLocation.get()) != 0:
+                #tries to create a location variable based off the info given            
+                start = self.locationService.geocode(self.findLocation.get()) #self.findToLocation.delete(0, END)
+                #if the start variable is created sucessfully,
+                if start:
+                    #if there is data in the 2nd entry
+                    if len(self.findToLocation.get()) != 0:
+                        #tries to create an end variable based off the info given            
+                        end = self.locationService.geocode(self.findToLocation.get())
+                        #if the end variable is created sucessfully,
+                        if end:
+                            #creates a marker on the map to the start of the route
+                            self.map_widget.set_marker(start.latitude, start.longitude, text = start.address, text_color = "green")
+                            #creates a marker on the map to the end of the route
+                            self.map_widget.set_marker(end.latitude, end.longitude, text = end.address, text_color = "red")
+                            #send the start and end variable to another function for routing
+                            self.getRoute(start, end)
+                        #clears both entries 
+                        else:
+                            self.findLocation.delete(0, END)
+                            self.findToLocation.delete(0, END)
+                #clears both entries 
+                else:
+                    self.findLocation.delete(0, END)
+                    self.findToLocation.delete(0, END)
+                          
+    def getRoute(self, start, end):
+        #sets bools value to true to ensure 'route' button is inactive
+        self.hasRoute = True
+        #sets starting and ending coordinates
+        coords = [[start.longitude , start.latitude],[end.longitude, end.latitude]]
+        #sets parameters for the routing of the trip
+        route = self.client.directions(coordinates = coords, profile = 'driving-car', format = 'geojson',)
+        #adds the coordiantes to a list of tuples
+        route_coordinates = [tuple(reversed(coord)) for coord in route['features'][0]['geometry']['coordinates']]
+        #adds the starting point to the beginning of the list
+        route_coordinates.insert(0,(start.latitude, start.longitude))
+        #adds the ending point to the end of the list
+        route_coordinates.insert(len(route_coordinates),(end.latitude, end.longitude))
+        #gets the middle coordinate from the list (middle of the route)
+        middle = route_coordinates[int(len(route_coordinates)/2)]
+        #sets the map middle position to the middle of the route
+        self.map_widget.set_position(middle[0], middle[1], marker = False)
+        print(len(route_coordinates))
+        #creates the path from the starting point to the ending point
+        path_1 = self.map_widget.set_path(route_coordinates)
+        #if the length of the coordinates list is a certain amount, zoom a certain amount out/in
+        if len(route_coordinates) > 38:
+            self.map_widget.set_zoom(10)
+    
+    def searchMap(self):
+        #if there is data in the entry
+        if len(self.findLocation.get()) != 0:
+            #tries to create a location variable based off the info given
+            location = self.locationService.geocode(self.findLocation.get())
+            #if the variable is created sucessfully,
+            if location:
+            #    self.mapCanvas.destroy() 
+            #    self.setInOrder(location)
+                #sets the map middle position to the variable
+                self.map_widget.set_position(location.latitude, location.longitude, marker = True)
+                #creates a marker at the map middle position to the middle of the route
+                self.map_widget.set_marker(location.latitude, location.longitude, text = location.address, text_color = "black")
+                #sets the zoom
+                self.map_widget.set_zoom(14)
+                print(location.address)
+                print(f"long: {location.longitude}, lat: {location.latitude}")
+            #if the variable is not created sucessfully,
+            else:
+                #clears the entry of unwanted/bad/incorrect information
+                self.findLocation.delete(0, END)
+    
+    def reduceEntry(self):
+         #reduce search canvas and delete new rectange
+        self.searchFrame.config(height = self.searchFrame_height)
+        self.searchFrame.delete("rectangle2")
+        #reduce height of expand button, and change text and command
+        self.expandButton.config(text = ">", command = lambda : self.expandEntry(),)        
+        self.expandButton.place(x = 1 , y = 1, width = 20, height = 32)
+        #destroy new entry for "to" position
+        self.findToLocation.destroy()
+        #destroy new clear button
+        self.clearButton2.destroy()
+        #reduce height of search button, and configure text and command
+        self.searchButton.config(text = "find", command = lambda : self.searchMap())
+        self.searchButton.place(x = self.searchFrame_width - 36, y = 1, width = 35, height = 32)
+        #destroy "from" label
+        self.fromlabel.destroy()
+        #destroy "to" label
+        self.tolabel.destroy()
+        #recreate a "search" label
+        self.searchlabel = Label(self.searchFrame, text = "search", font = ('calibri', 8), bg = "#ffffff", fg = "lightgray")
+        self.searchlabel.place(x = self.searchFrame_width / 2 - self.searchlabel.winfo_reqwidth(), y = 1, height = 8)
+        
+    def clearEntry(self):
+        self.hasRoute = False
+        self.findLocation.delete(0, END)
+        self.map_widget.set_zoom(9)
+        #self.reset_ToDefault()
+        
+    def clearToEntry(self):
+        self.hasRoute = False
+        self.findToLocation.delete(0, END)
+    
+    def reset_ToDefault(self):
+        self.has_defaultText = True
+        self.findLocation.configure(foreground = self.entryDefaultTextColour)
+        self.findLocation.insert(0, self.entryDefaultText)
+        self.findLocation.icursor(0)
 
+    #def check_text(self):
+    #    if len(self.findLocation.get())
+        
+    def click_In(self, event):
+        if self.findLocation.get() == self.entryDefaultText:
+            print("YES")
+            self.has_defaultText = False
+            self.findLocation.delete(0, END)
+            self.findLocation.configure(foreground = "black")
+            #self.findLocation.icursor(0)
+            self.findLocation.bind('<FocusOut>', self.click_Out)
+            
+    def click_Out(self, event):
+        if len(self.findLocation.get()) < 5 and not self.has_defaultText:
+            print("EMPTY")
+            self.reset_ToDefault()
+            
 class Settings(Frame):
     def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
@@ -676,3 +905,8 @@ class Settings(Frame):
         label.place(x = 800, y = 200)
         
 App("Kareem")
+
+"""
+Boeing, G. (2024). Modeling and Analyzing Urban Networks and Amenities with OSMnx. Working paper.
+https://geoffboeing.com/publications/osmnx-paper/
+"""

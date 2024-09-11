@@ -4,11 +4,11 @@ from tkinter.ttk import Combobox
 from PIL import ImageTk, Image
 from utils import rescaleFrame
 import threading as th
-import files as files
 import pickle as pkl
 import cvzone as cz
 import numpy as np
 import cv2 as cv
+import files
 #import time
 
 class ParkingMonitoringApp(Tk):
@@ -22,6 +22,9 @@ class ParkingMonitoringApp(Tk):
         self.geometry(f"{self.__window_bredth}x{self.__window_length}+150+0")
         self.resizable(False, False)
         self.title(f"Find Me Parking App - User: {username}")
+        icon = Image.open(files.icon)
+        photo = ImageTk.PhotoImage(icon)
+        self.wm_iconphoto(False, photo)
         
         #Variables
         self.done = True
@@ -32,7 +35,8 @@ class ParkingMonitoringApp(Tk):
         self.checkfeed = 0
         self.__lotNames = {}
         self.availableSpots = []
-        self.__listOfFeeds = ["MegaMart Parking Lot #1", "Sagicor Life Building Parking Lot", "NewLife Mall #3 Parking Lot"]
+        #print(f' EditWindow: {self.listLength}') Digicel Main Parking Lot
+        self.__listOfFeeds = ["MegaMart Parking Lot East", "NCB Parking Lot", "Sagicor Parking Lot",]
         
         #Get positions
         self.posList = self.getFileSetArray()
@@ -115,8 +119,8 @@ class ParkingMonitoringApp(Tk):
         self.createEditCanvas()
 
         #Create a Menu  
-        self.menubar = Menu(self)
-        self.createMenuBar(self.menubar)
+        #self.menubar = Menu(self)
+        #self.createMenuBar(self.menubar)
         
         #starts tkinter
         self.mainloop()
@@ -494,9 +498,15 @@ class ParkingMonitoringApp(Tk):
             f.close()
         except Exception:
             pass
-
+        try:
+            f = open("C:/Users/DELL/Desktop/MyJourney/Python/ParkingApp/Monitor/ParkingLots/ParkingLot1/ParkingLot11.txt", "w")
+            for x, y in self.__lotNames.items():
+                f.write(f'{y}\n')
+            f.close()
+        except Exception:
+            pass
         self.destroy()
-        Login()
+        #Login()
                    
 if __name__ == "__main__":
-    ParkingMonitoringApp("Kareem")
+    ParkingMonitoringApp("Group 3")
