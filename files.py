@@ -12,6 +12,7 @@ app_screen = f"{setPath()}/app_screen.jpg"
 cat = f"{setPath()}/cat.png"
 no_user = f"{setPath()}/noUser.png"
 icon = f"{setPath()}/icon.png"
+places_in_Jamaica = f"{setPath()}/places_in_Jamaica.txt"
 
 image_name = f"{setPath()}/SoftwareMedia/carParkImg.png"
 video_name = f"{setPath()}/SoftwareMedia/carPark.mp4"

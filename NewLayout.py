@@ -687,7 +687,16 @@ class ViewMap(Frame):
         self.searchFrame_width = 320
         self.searchFrame_height = 34
         self.locationService = Nominatim(user_agent="Geopy Library")
+        self.locations = []
+        self.getLocations()
         self.setInOrder()
+        
+    def getLocations(self):
+        with open(files.places_in_Jamaica) as f:
+            for line in f:
+                if len(line) > 0:
+                    if line not in self.locations:
+                        self.locations.append(str(line.strip()))
     
     #this function is called to create a canvas to display the map on
     def setInOrder(self, location = None):
@@ -707,6 +716,7 @@ class ViewMap(Frame):
         #    self.map_widget.set_position(location.latitude, location.longitude, marker = True)
         #    self.map_widget.set_marker(location.latitude, location.longitude, text = location.address, text_color = "black")
         self.map_widget.set_zoom(9)
+        self.clearRoute = Button(self.mapCanvas, text = "X", font = ('bold', 15), relief = "flat", bg = "#ffffff", activebackground = "#ffffff", bd= 0, highlightthickness = 0, border = 0)#, command = lambda : self.clearToEntry(), )
     
     #this function creates the default widgets needed to navigate the map    
     def createSearch(self):
@@ -714,12 +724,12 @@ class ViewMap(Frame):
         self.searchFrame = Canvas(self.mapCanvas, width = self.searchFrame_width, height = self.searchFrame_height, bg = "#ffffff", bd = 0, borderwidth = 0, highlightthickness = 0)
         self.searchFrame.place(x = self.__midpointAcross - (self.searchFrame_width / 2), y = 20,)
         #creates a black rectange around frame
-        self.searchFrame.create_rectangle(0,0,self.searchFrame_width-1,self.searchFrame_height-1,outline = "black", width = 1, tags="rectangle")
+        self.searchFrame.create_rectangle(0,0,self.searchFrame_width-1,self.searchFrame_height-1,outline = "lightgray", width = 1, tags="rectangle")
         #creates an expand button that will be toggled for 'search a location' or 'map from - to'
         self.expandButton = Button(self.searchFrame, text = ">", font = ('calibri', 13, 'bold'), relief = "flat", bg = "lightgray", activebackground = "lightgray", bd= 0, highlightthickness = 0, border = 0, command = lambda : self.expandEntry(), )
         self.expandButton.place(x = 1 , y = 1, width = 20, height = 32)
         #creates an Entry to input search data
-        self.findLocation = Entry(self.searchFrame, bd = 0, bg = "#ffffff", font = ('bold',10), relief = "flat", highlightthickness = 0, border = 0,)# foreground = self.entryDefaultTextColour)
+        self.findLocation = Entry(self.searchFrame, bd = 0, bg = "#ffffff", font = ('bold',10), relief = "flat", highlightthickness = 0, border = 0, insertontime = 0)# foreground = self.entryDefaultTextColour)
         #self.has_defaultText = True
         #self.findLocation.icursor(0)
         self.findLocation.place(x = 25, y = 1, width = self.entry_width - 1, height = 32)
@@ -739,7 +749,7 @@ class ViewMap(Frame):
     def expandEntry(self):
         #expand search canvas and draw new rectange
         self.searchFrame.config(height = self.searchFrame_height * 2)
-        self.searchFrame.create_rectangle(0,self.searchFrame_height-1,self.searchFrame_width-1,(self.searchFrame_height*2)-1,outline = "black", width = 1, tags="rectangle2")
+        self.searchFrame.create_rectangle(0,self.searchFrame_height-1,self.searchFrame_width-1,(self.searchFrame_height*2)-1,outline = "lightgray", width = 1, tags="expand")
         #expand height of expand button, and change text and command
         self.expandButton.config(text = "^", command = lambda : self.reduceEntry(),)        
         self.expandButton.place(x = 1 , y = 1, width = 20, height = (32 * 2) + 2)
@@ -760,26 +770,32 @@ class ViewMap(Frame):
         #create a "to" label
         self.tolabel = Label(self.searchFrame, text = "to   ", font = ('calibri', 8), bg = "#ffffff", fg = "lightgray")
         self.tolabel.place(x = self.searchFrame_width / 2 - self.tolabel.winfo_reqwidth(), y = 1 + self.searchFrame_height, height = 8)
+        #self.searchFrame.create_line(0,self.searchFrame_height-10,self.searchFrame_width-1,self.searchFrame_height-10, activefill="red", width = 2, tags="expand")
         
     def mapRoute(self):
         #if the route bool is false, then there is no active routes
         if not self.hasRoute:
             #if there is data in the entry
-            if len(self.findLocation.get()) != 0:
-                #tries to create a location variable based off the info given            
-                start = self.locationService.geocode(self.findLocation.get()) #self.findToLocation.delete(0, END)
+            if len(self.findLocation.get().strip()) != 0:
+                #tries to create a location variable based off the info given
+                start_location = self.checkLocation(self.findLocation.get())
+                start = self.locationService.geocode(start_location) #self.findToLocation.delete(0, END)
                 #if the start variable is created sucessfully,
                 if start:
                     #if there is data in the 2nd entry
-                    if len(self.findToLocation.get()) != 0:
-                        #tries to create an end variable based off the info given            
-                        end = self.locationService.geocode(self.findToLocation.get())
+                    if len(self.findToLocation.get().strip()) != 0:
+                        #tries to create an end variable based off the info given
+                        end_location = self.checkLocation(self.findToLocation.get())
+                        end = self.locationService.geocode(end_location)
                         #if the end variable is created sucessfully,
                         if end:
+                            button = 50
                             #creates a marker on the map to the start of the route
                             self.map_widget.set_marker(start.latitude, start.longitude, text = start.address, text_color = "green")
                             #creates a marker on the map to the end of the route
                             self.map_widget.set_marker(end.latitude, end.longitude, text = end.address, text_color = "red")
+                            #place clear route button on screen
+                            self.clearRoute.place(x = self.__window_bredth - button - 20 , y = self.__window_length - button - 20, width = button, height = button)
                             #send the start and end variable to another function for routing
                             self.getRoute(start, end)
                         #clears both entries 
@@ -790,6 +806,12 @@ class ViewMap(Frame):
                 else:
                     self.findLocation.delete(0, END)
                     self.findToLocation.delete(0, END)
+    
+    def checkLocation(self, location):
+        if location in self.locations or location.capitalize() in self.locations or location.title() in self.locations:
+            return f"{location}, Jamaica"
+        else:
+            return location
                           
     def getRoute(self, start, end):
         #sets bools value to true to ensure 'route' button is inactive
@@ -817,9 +839,12 @@ class ViewMap(Frame):
     
     def searchMap(self):
         #if there is data in the entry
-        if len(self.findLocation.get()) != 0:
+        if len(self.findLocation.get().strip()) != 0:
+            #dd
+            the_location = self.checkLocation(self.findLocation.get())
+            print(the_location)
             #tries to create a location variable based off the info given
-            location = self.locationService.geocode(self.findLocation.get())
+            location = self.locationService.geocode(the_location)
             #if the variable is created sucessfully,
             if location:
             #    self.mapCanvas.destroy() 
@@ -838,9 +863,11 @@ class ViewMap(Frame):
                 self.findLocation.delete(0, END)
     
     def reduceEntry(self):
-         #reduce search canvas and delete new rectange
+        #resets route bool
+        self.hasRoute = False
+        #reduce search canvas and delete new rectange
         self.searchFrame.config(height = self.searchFrame_height)
-        self.searchFrame.delete("rectangle2")
+        self.searchFrame.delete("expand")
         #reduce height of expand button, and change text and command
         self.expandButton.config(text = ">", command = lambda : self.expandEntry(),)        
         self.expandButton.place(x = 1 , y = 1, width = 20, height = 32)

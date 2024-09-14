@@ -23,9 +23,9 @@ class viewFeed(Tk):
         
         #frame for main window
         mainFrame = Frame(self.containerFrame, highlightthickness = 0, bd = 0, relief = "flat", width = self.__window_bredth - self.sideFrame.winfo_reqwidth(), height = self.__window_length, )
-        mainFrame.pack(side="top", fill="both", expand=True)
-        mainFrame.grid_rowconfigure(0, weight=1)
-        mainFrame.grid_columnconfigure(0, weight=1)
+        mainFrame.pack(side="top", fill="both", expand = True)
+        mainFrame.grid_rowconfigure(0, weight = 1)
+        mainFrame.grid_columnconfigure(0, weight = 1)
          
         self.listOfViewFrames = {}
         
