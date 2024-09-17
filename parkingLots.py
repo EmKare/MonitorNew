@@ -1,4 +1,4 @@
-parkingLots = {
+_parkingLots = {
     #Main ??
     "UCC Parking": (18.0073869, -76.7812452),
     #Half Way Tree
@@ -9,7 +9,7 @@ parkingLots = {
     "York Plaza": (18.0099319, -76.7982915),
     "Winchester Business Center": (18.0114689, -76.7944081),
     #Liguanea
-    "Soverign Centre": (918.0214454, -76.7692180),
+    "Soverign Centre": (18.0214454, -76.7692180),
     "Liguanea Plaza": (18.0193705, -76.7670137),
     "CBA Jamaica": (18.0179361, -76.7593947),
     #Papine
@@ -36,9 +36,11 @@ parkingLots = {
     "Princeville Plaza": (18.0273651, -76.7964849),
     "Super Valu Towne Centre" : (18.0421115, -76.7936302),
     "Manor Park Plaza": (18.0521858, -76.7928383),
-    "Lower Manor Park Plaza": (18.0505588 -76.7930781),
+    "Lower Manor Park Plaza": (18.0505588, -76.7930781),
     "Manor Centre": (18.0486070, -76.7945131),
     "Mannings Hill Commercial Centre": (18.0409813, -76.7995472),
+    "TGI Fridays": (18.0180978, -76.7816981),
+    "Barbican Beach": (18.0236670, -76.7803184),
     "Sovereign on the Boulevard": (18.0280276, -76.8129472),
     "Boulevard Supercentre": (18.0264615, -76.8322116),
     "Washington Plaza": (18.0265115, -76.8371902),
@@ -72,9 +74,11 @@ parkingLots = {
     "GK Insurance Parking Lot": (18.0080997, -76.7863509),
     "Andre's Garage": (18.0024632, -76.7946163),
     #AIRPORT
-    "NMIA Parking Lot A": (17.9386364, -76.7780202),
-    "NMIA Parking Lot B": (17.9382204, -76.7760435),
-    "NMIA Parking Lot C": (17.9398630, -76.7783689),
+    "NMIA Parking Lot A": (17.9386082, -76.7780145),
+    "NMIA Parking Lot B": (17.9381959, -76.7760460),
+    "NMIA Parking Lot C": (17.9398411, -76.7783603),
+    "NMIA Parking Lot D": (17.9400975, -76.7761406),
+    "NMIA Parking Lot E": (17.9402314, -76.7718813),     
     #DOWNTOWN
     "Waterfront Parking": (17.9636675, -76.7949210),
     "West Street Parking Lot": (17.9652608, -76.7965396),
@@ -87,7 +91,7 @@ parkingLots = {
     "UDC Car Park": (17.9679740, -76.7923571),
     "Duke Street Parking": (17.9679916, -76.7909677),
     "NLJ Car PARK": (17.9660974, -76.7895985),
-    "WIHCON Parking Lot": (17.9650544, -76.7846676),
+    "WIHCON Parking Lot": (17.9650423, -76.7846704),
     "East Street Parking": (17.9701696, -76.7899977),
     "Parking for RGD": (17.9695740, -76.7906527),
     "KSAC Parking Lot": (17.9725263, -76.7897354),

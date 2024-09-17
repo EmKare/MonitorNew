@@ -3,10 +3,10 @@ from tkintermapview import TkinterMapView
 from geopy.geocoders import Nominatim
 from urllib.request import urlopen
 from tkinter.ttk import Combobox
-
 from tkinter import ttk as ttk
 from PIL import ImageTk, Image
 from utils import rescaleFrame
+from geopy import distance 
 from time import strftime
 import threading as th
 import files as files
@@ -687,9 +687,38 @@ class ViewMap(Frame):
         self.searchFrame_width = 320
         self.searchFrame_height = 34
         self.locationService = Nominatim(user_agent="Geopy Library")
+        self.distanceService = Nominatim(user_agent="geoapiExercises")
+        self.__weight_constant = 0.0001
         self.locations = []
         self.getLocations()
         self.setInOrder()
+        #self.showLocations()
+        #self.toGetDistanceExample()
+                
+    def toGetDistanceExample(self):
+        Input_place1 = "May Pen"
+        Input_place2 = "Kingston"
+
+        # Get location of the input strings
+        place1 = self.locationService.geocode(Input_place1)
+        place2 = self.locationService.geocode(Input_place2)
+
+        # Get latitude and longitude
+        Loc1_lat, Loc1_lon = (place1.latitude), (place1.longitude)
+        Loc2_lat, Loc2_lon = (place2.latitude), (place2.longitude)
+
+        location1 = (Loc1_lat, Loc1_lon)
+        location2 = (Loc2_lat, Loc2_lon)
+
+        # display the distance
+        print(distance.distance(location1, location2).km, " kms")
+    
+    def showLocations(self):
+        from parkingLots import _parkingLots
+        
+        for x, y in _parkingLots.items():
+            #print(x, y)
+            self.map_widget.set_marker(y[0], y[1], text = x, text_color = "black")
         
     def getLocations(self):
         with open(files.places_in_Jamaica) as f:
@@ -836,6 +865,10 @@ class ViewMap(Frame):
         #if the length of the coordinates list is a certain amount, zoom a certain amount out/in
         if len(route_coordinates) > 38:
             self.map_widget.set_zoom(10)
+            
+        ###
+        # With self.map_widget.delete_all_path() all path on the map will be deleted.
+        ###
     
     def searchMap(self):
         #if there is data in the entry
@@ -901,9 +934,6 @@ class ViewMap(Frame):
         self.findLocation.configure(foreground = self.entryDefaultTextColour)
         self.findLocation.insert(0, self.entryDefaultText)
         self.findLocation.icursor(0)
-
-    #def check_text(self):
-    #    if len(self.findLocation.get())
         
     def click_In(self, event):
         if self.findLocation.get() == self.entryDefaultText:
