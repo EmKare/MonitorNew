@@ -1,7 +1,13 @@
+
+from time import time
+start = time()
+
 from tkinter import Tk, mainloop, CENTER
 from tkintermapview import TkinterMapView
 from geopy.geocoders import Nominatim
-from geopy import distance 
+from geopy import distance
+from parkingLots import _parkingLots
+from itertools import islice
 
 import openrouteservice as ors
 client = ors.Client(key='5b3ce3597851110001cf62480f6929fa14f1415b865522ca5d94fb50')
@@ -16,7 +22,10 @@ map_widget = TkinterMapView(root_tk, width=800, height=600, corner_radius=2)
 map_widget.pack(fill="both")
 map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
 
-car_pos = (17.9394675, -76.7665624)
+#(18.0109438, -76.7972963)
+#car_pos = (17.9394675, -76.7665624)  #airport                 || squares: 116 | 1.31 seconds | total available_lots found: 5
+car_pos = (18.012265695689663, -76.79800557291115) #hwt       || squares: 26  | 1.46 seconds | total available_lots found: 55
+#car_pos = (17.966814698972417, -76.80206888632081) #downtown  || squares: 71  | 1.36 seconds | total available_lots found: 19
 
 map_widget.set_position(car_pos[0], car_pos[1], marker=False)
 map_widget.set_marker(car_pos[0], car_pos[1], text="car")
@@ -30,13 +39,8 @@ parkingLots = {
     "NMIA Parking Lot D": (17.9400975, -76.7761406),
     "NMIA Parking Lot E": (17.9402314, -76.7718813),
 }
-
-#for x, y in parkingLots.items():
-#    map_widget.set_marker(y[0], y[1], text = x, text_color = "black")
-    
+   
 car = 1
-
-
 
 """
 weight = 0.011
@@ -128,7 +132,8 @@ yes = 'yes'
 no = 'no'
 
 first_weight_const = 0.0001
-second_weight_const = 0.02
+#final =             0.0116
+second_weight_const = 0.02 #0.0026
 max = 0.015
 
 available_lots = {}
@@ -136,27 +141,34 @@ more_available_lots = {}
 count = 1
 
 def create_squares():
+    global count
     weight = first_weight_const
     while len(available_lots) != 4:
-        for x, y in parkingLots.items():
-            check_if_in_range(x, y, weight)
+        for name, coord in _parkingLots.items():
+            check_if_in_range(name, coord, weight)
         weight += first_weight_const
+        count += 1
         
+    print(f"final weight: {weight:.4f}, squares: {count}")  
     exclude_already_added(second_weight_const)
         
     print(f"close available_lots: {len(available_lots)}")
-    for l in available_lots.keys():
-        print(l)
-        
+    for name in available_lots.keys():
+        print(name)
+        #map_widget.set_marker(coord[0],coord[1], text = name, text_color = "red")
+    cap, amt = 5, 1
     print(f"other available_lots: {len(more_available_lots)}")
-    for l in more_available_lots.keys():
-        print(l)
+    
+    for lot in islice(more_available_lots.items(), cap):
+        print(f"{amt}: {lot[0]}")
+        map_widget.set_marker(lot[1][0], lot[1][1], text = lot[0], text_color = "red")
+        amt+=1
+
         
     print(f"total available_lots found: {len(available_lots) + len(more_available_lots)}")
         
 def check_if_in_range(name, coord, weight):
-    #print(weight)
-    global count
+    
     lat = coord[0]
     lon = coord[1]
     if car_pos[0] + weight > lat and lon > car_pos[1] - weight:
@@ -164,7 +176,7 @@ def check_if_in_range(name, coord, weight):
             if car_pos[0] - weight < lat and lon < car_pos[1] + weight:
                 if car_pos[0] - weight < lat and lon > car_pos[1] - weight:
                     add_to_map(name, coord, weight)
-                    count += 1
+                    
 
 def add_to_map(name, coord, weight):
     if name not in available_lots.keys():
@@ -183,9 +195,8 @@ def exclude_already_added(weight2):
                             (car_pos[0] - weight2, car_pos[1] + weight2),
                             (car_pos[0] - weight2, car_pos[1] - weight2),],
                             outline_color="pink", border_width=2)
-    for name, coord in parkingLots.items():
+    for name, coord in _parkingLots.items():
         if name not in available_lots.keys():
-            #print(f"not included:\n{x}{y}")
             check_for_others(name, coord, weight2)
         
 def check_for_others(name, coord, weight2):
@@ -197,10 +208,13 @@ def check_for_others(name, coord, weight2):
                 if car_pos[0] - weight2 < lat and lon > car_pos[1] - weight2:
                     if name not in more_available_lots.keys():
                         more_available_lots[name] = coord
-                        map_widget.set_marker(coord[0],coord[1], text = name, text_color = "red")
                         #print(f"{count}: {name} @ weight: {weight2}")
-                        
+
 create_squares()
+
+end = time()
+
+print(f'Execution time: {(end - start):.2f} seconds') #1.22 seconds
 
 mainloop()
     
