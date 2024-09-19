@@ -8,11 +8,12 @@ client = ors.Client(key='5b3ce3597851110001cf62480f6929fa14f1415b865522ca5d94fb5
 
 distanceService = Nominatim(user_agent="geoapiExercises")
 
+width, height = 1000, 800
 root_tk = Tk()
-root_tk.geometry(f"{800}x{600}")
+root_tk.geometry(f"{width}x{height}")
 root_tk.title("Find Parking Lot")
 
-map_widget = TkinterMapView(root_tk, width=800, height=600, corner_radius=2,)
+map_widget = TkinterMapView(root_tk, width=width, height=height, corner_radius=2)
 map_widget.pack(fill="both")
 map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom = 22)
 
@@ -27,7 +28,7 @@ map_widget.set_polygon([(car_pos[0] + weight, car_pos[1] - weight),
                         (car_pos[0] - weight, car_pos[1] + weight),
                         (car_pos[0] - weight, car_pos[1] - weight),],
                        outline_color="red", border_width=2)
-
+"""
 weight = 0.01
 map_widget.set_polygon([(car_pos[0] + weight, car_pos[1] - weight),
                         (car_pos[0] + weight, car_pos[1] + weight),
@@ -65,7 +66,7 @@ map_widget.set_polygon([(car_pos[0] + weight, car_pos[1] - weight),
                         (car_pos[0] - weight, car_pos[1] + weight),
                         (car_pos[0] - weight, car_pos[1] - weight),],
                        outline_color="blue", border_width=2)
-
+"""
 car = 1
 def left_click_event(coordinates_tuple):
     global car

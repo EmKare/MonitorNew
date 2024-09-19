@@ -1,6 +1,6 @@
 
 from time import time
-start = time()
+
 
 from tkinter import Tk, mainloop, CENTER
 from tkintermapview import TkinterMapView
@@ -14,11 +14,12 @@ client = ors.Client(key='5b3ce3597851110001cf62480f6929fa14f1415b865522ca5d94fb5
 
 distanceService = Nominatim(user_agent="geoapiExercises")
 
+width, height = 1000, 800
 root_tk = Tk()
-root_tk.geometry(f"{800}x{600}")
+root_tk.geometry(f"{width}x{height}")
 root_tk.title("Find Parking Lot")
 
-map_widget = TkinterMapView(root_tk, width=800, height=600, corner_radius=2)
+map_widget = TkinterMapView(root_tk, width=width, height=height, corner_radius=2)
 map_widget.pack(fill="both")
 map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
 
@@ -28,7 +29,7 @@ car_pos = (18.012265695689663, -76.79800557291115) #hwt       || squares: 26  | 
 #car_pos = (17.966814698972417, -76.80206888632081) #downtown  || squares: 71  | 1.36 seconds | total available_lots found: 19
 
 map_widget.set_position(car_pos[0], car_pos[1], marker=False)
-map_widget.set_marker(car_pos[0], car_pos[1], text="car")
+#map_widget.set_marker(car_pos[0], car_pos[1], text="car")
 
 #map_widget.set_marker(17.9393675, -76.7664624, text="offs")
 
@@ -41,6 +42,13 @@ parkingLots = {
 }
    
 car = 1
+
+max = 0.015
+
+available_lots = {}
+more_available_lots = {}
+count = 1
+left_click = False
 
 """
 weight = 0.011
@@ -119,55 +127,70 @@ def add_marker_event(coords):
     car += 1
     
 def left_click_event(coordinates_tuple):
-    global car
-    print("Left click event with coordinates:", coordinates_tuple)
-    map_widget.set_marker(coordinates_tuple[0], coordinates_tuple[1], text=f"marker {car}")
-    print(f"Straight: {distance.distance(car_pos, coordinates_tuple).km:.2f} kms")
-    car += 1
+    global left_click
+    if not left_click:
+        left_click = True
+        start = time()
+        print("Finding Parking for Coordinates:", coordinates_tuple)
+        map_widget.set_marker(coordinates_tuple[0], coordinates_tuple[1], text=f"CAR IS HERE")
+        create_squares(coordinates_tuple)
+        end = time()
+        print(f'Execution time: {(end - start):.2f} seconds')
+
+def right_click_event():
+    global left_click
+    try:
+        map_widget.delete_all_marker()
+    except Exception:
+        pass
+    try:
+        map_widget.delete_all_polygon()
+    except Exception:
+        pass
+    try:
+        available_lots.clear()
+        more_available_lots.clear()
+    except Exception:
+        pass
+    print("------------------------------------------------------------------------------------------")
+    left_click = False
     
 map_widget.add_left_click_map_command(left_click_event)
-
+map_widget.add_right_click_menu_command(label="Restart", command = right_click_event, pass_coords=False)
 map_widget.add_right_click_menu_command(label="Add Marker", command=add_marker_event, pass_coords=True)
 yes = 'yes'
 no = 'no'
 
-first_weight_const = 0.0001
-#final =             0.0116
-second_weight_const = 0.02 #0.0026
-max = 0.015
+first_weight_const = 0.000001
 
-available_lots = {}
-more_available_lots = {}
-count = 1
-
-def create_squares():
+def create_squares(car_pos = None):
     global count
+    second_weight_const = 0.02 #0.0026
     weight = first_weight_const
     while len(available_lots) != 4:
         for name, coord in _parkingLots.items():
-            check_if_in_range(name, coord, weight)
+            check_if_in_range(car_pos, name, coord, weight)
         weight += first_weight_const
         count += 1
         
-    print(f"final weight: {weight:.4f}, squares: {count}")  
-    exclude_already_added(second_weight_const)
+    print(f"final weight: {weight:.4f}, squares: {count}")
+    
+    exclude_already_added(car_pos, weight, second_weight_const)
         
     print(f"close available_lots: {len(available_lots)}")
     for name in available_lots.keys():
-        print(name)
-        #map_widget.set_marker(coord[0],coord[1], text = name, text_color = "red")
+        print(f"{name} : {distance.distance(car_pos, (available_lots[name][0], available_lots[name][1])).km:.2f} kms")
     cap, amt = 5, 1
     print(f"other available_lots: {len(more_available_lots)}")
     
     for lot in islice(more_available_lots.items(), cap):
-        print(f"{amt}: {lot[0]}")
+        print(f"{amt}. {lot[0]} : {distance.distance(car_pos, (lot[1][0], lot[1][1])).km:.2f} kms")
         map_widget.set_marker(lot[1][0], lot[1][1], text = lot[0], text_color = "red")
         amt+=1
-
         
     print(f"total available_lots found: {len(available_lots) + len(more_available_lots)}")
         
-def check_if_in_range(name, coord, weight):
+def check_if_in_range(car_pos, name, coord, weight):
     
     lat = coord[0]
     lon = coord[1]
@@ -175,10 +198,10 @@ def check_if_in_range(name, coord, weight):
         if car_pos[0] + weight > lat and lon < car_pos[1] + weight:
             if car_pos[0] - weight < lat and lon < car_pos[1] + weight:
                 if car_pos[0] - weight < lat and lon > car_pos[1] - weight:
-                    add_to_map(name, coord, weight)
+                    add_to_map(car_pos, name, coord, weight)
                     
 
-def add_to_map(name, coord, weight):
+def add_to_map(car_pos, name, coord, weight):
     if name not in available_lots.keys():
         available_lots[name] = coord
         map_widget.set_polygon([(car_pos[0] + weight, car_pos[1] - weight),
@@ -189,17 +212,21 @@ def add_to_map(name, coord, weight):
         map_widget.set_marker(coord[0],coord[1], text = name, text_color = "green")
         #print(f"{count}: {name} @ weight: {weight}")
         
-def exclude_already_added(weight2):
-    map_widget.set_polygon([(car_pos[0] + weight2, car_pos[1] - weight2),
-                            (car_pos[0] + weight2, car_pos[1] + weight2),
-                            (car_pos[0] - weight2, car_pos[1] + weight2),
-                            (car_pos[0] - weight2, car_pos[1] - weight2),],
+def exclude_already_added(car_pos, weight2, final_weight):
+    while weight2 <= final_weight:
+        for name, coord in _parkingLots.items():
+            if name not in available_lots.keys():
+                check_for_others(car_pos, name, coord, weight2)
+            weight2 += first_weight_const
+            
+    map_widget.set_polygon([(car_pos[0] + final_weight, car_pos[1] - final_weight),
+                            (car_pos[0] + final_weight, car_pos[1] + final_weight),
+                            (car_pos[0] - final_weight, car_pos[1] + final_weight),
+                            (car_pos[0] - final_weight, car_pos[1] - final_weight),],
                             outline_color="pink", border_width=2)
-    for name, coord in _parkingLots.items():
-        if name not in available_lots.keys():
-            check_for_others(name, coord, weight2)
         
-def check_for_others(name, coord, weight2):
+        
+def check_for_others(car_pos, name, coord, weight2):
     lat = coord[0]
     lon = coord[1]
     if car_pos[0] + weight2 > lat and lon > car_pos[1] - weight2:
@@ -210,11 +237,7 @@ def check_for_others(name, coord, weight2):
                         more_available_lots[name] = coord
                         #print(f"{count}: {name} @ weight: {weight2}")
 
-create_squares()
-
-end = time()
-
-print(f'Execution time: {(end - start):.2f} seconds') #1.22 seconds
+#create_squares()
 
 mainloop()
     
