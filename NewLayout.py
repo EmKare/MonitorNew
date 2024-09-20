@@ -692,7 +692,7 @@ class ViewMap(Frame):
         self.locations = []
         self.getLocations()
         self.setInOrder()
-        #self.showLocations()
+        self.showLocations()
         #self.toGetDistanceExample()
                 
     def toGetDistanceExample(self):
@@ -717,8 +717,10 @@ class ViewMap(Frame):
         from parkingLots import _parkingLots
         
         for x, y in _parkingLots.items():
-            #print(x, y)
-            self.map_widget.set_marker(y[0], y[1], text = x, text_color = "black")
+            try:
+                self.map_widget.set_marker(y[0], y[1], text = x, text_color = "black")
+            except Exception:
+                print(f"error @ {x} with {y}")
         
     def getLocations(self):
         with open(files.places_in_Jamaica) as f:
@@ -738,7 +740,8 @@ class ViewMap(Frame):
     def createMap(self, location = None):   
         self.map_widget = TkinterMapView(self.mapCanvas, width = self.__window_bredth - 2, height = self.__window_length - 2, corner_radius=2)
         self.map_widget.place(x = 1, y = 1,)        
-        self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom = 22)  # google normal
+        #self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom = 22)  # google normal
+        self.map_widget.set_tile_server("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png")
         #if location is None:
         self.map_widget.set_position(18.1489364, -77.3290934, marker = False) #18.007943,-76.781315
         #else:
