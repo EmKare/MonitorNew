@@ -20,8 +20,8 @@ root_tk.title("Find Parking Lot")
 
 map_widget = TkinterMapView(root_tk, width = width, height = height, corner_radius = 2)
 map_widget.pack(fill = "both")
-#map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom = 22)
-map_widget.set_tile_server("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png")
+map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom = 22)
+#map_widget.set_tile_server("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png")
 
 #car_pos = (17.9394675, -76.7665624)  #airport                 || squares: 116 | 1.31 seconds | total available_lots found: 5
 #car_pos = (18.012265695689663, -76.79800557291115) #hwt       || squares: 26  | 1.46 seconds | total available_lots found: 55
@@ -37,35 +37,51 @@ more_available_lots = {}
 count = 1
 left_click = False
 first_weight_const = 0.000001
-colours = ["purple","gray","cadetblue","orange","pink"]
+colours = ["purple","gray","cadetblue","orange","pink",
+    'beige',
+    'green',
+    'darkgreen',
+    'lightgreen',
+    'darkblue',
+    'lightblue',
+    'purple',
+    'darkpurple',
+    'lightgray',
+    'black'
+]
 
 def create_squares(car_pos):
     global count
     second_weight_const = 0.02
+    draw_square(car_pos, second_weight_const, "pink")
+    exclude = False
     weight = first_weight_const
-    while len(available_lots) != 4:
+    while len(available_lots) != 8 :
         for name, coord in _parkingLots.items():
             check_if_in_range(car_pos, name, coord, weight)
         weight += first_weight_const
         count += 1
+        if weight >= second_weight_const:
+            exclude = True
+            break
         
     print(f"final weight: {weight:.4f}, squares: {count}")
-    
-    exclude_already_added(car_pos, weight, second_weight_const)
         
     print(f"close available_lots: {len(available_lots)}")
     
     for name in available_lots.keys():
         calculate_route_distance(car_pos, name, (available_lots[name][0], available_lots[name][1]), draw = True)
 
-    print(f"other available_lots: {len(more_available_lots)}")
-    
-    cap = 5
-    for lot in islice(more_available_lots.items(), cap):
-        calculate_route_distance(car_pos, lot[0], (lot[1][0], lot[1][1]),)
-        map_widget.set_marker(lot[1][0], lot[1][1], text = lot[0], text_color = "red")
+    if not exclude:
+        exclude_already_added(car_pos, weight, second_weight_const)
+        print(f"other available_lots: {len(more_available_lots)}")
+        
+        cap = 5
+        for lot in islice(more_available_lots.items(), cap):
+            calculate_route_distance(car_pos, lot[0], (lot[1][0], lot[1][1]),)
+            map_widget.set_marker(lot[1][0], lot[1][1], text = lot[0], text_color = "red")
 
-    print(f"total available_lots found: {len(available_lots) + len(more_available_lots)}")
+        print(f"total available_lots found: {len(available_lots) + len(more_available_lots)}")
         
 def check_if_in_range(car_pos, name, coord, weight):    
     lat = coord[0]
@@ -98,8 +114,7 @@ def exclude_already_added(car_pos, weight2, final_weight):
         for name, coord in _parkingLots.items():
             if name not in available_lots.keys():
                 check_for_others(car_pos, name, coord, weight2)
-            weight2 += first_weight_const
-    draw_square(car_pos, final_weight, "pink")        
+            weight2 += first_weight_const       
            
         
 def check_for_others(car_pos, name, coord, weight2):
@@ -148,6 +163,7 @@ def left_click_event(coordinates_tuple):
         create_squares(coordinates_tuple)
         end = time()
         print(f'Execution time: {(end - start):.2f} seconds')
+        print("------------------------------------------------------------------------------------------")
 
 def right_click_event():
     try:
@@ -167,7 +183,7 @@ def right_click_event():
         more_available_lots.clear()
     except Exception:
         pass
-    print("------------------------------------------------------------------------------------------")
+    #print("------------------------------------------------------------------------------------------")
     global left_click
     left_click = False
     

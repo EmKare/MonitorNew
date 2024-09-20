@@ -1,10 +1,11 @@
+#total so far - 215
 _parkingLots = {
     #Main ??
     "UCC Parking": (18.0069344, -76.7814985),
     #Half Way Tree
     "Pavillion Mall": (18.0136061, -76.7985002),
     "Tropical Plaza":(18.0149571, -76.7962194),
-    "Lane Plaza": (18.0176123, -76.7955923), #18.0207232 -76.7669174
+    "Lane Plaza": (18.0176123, -76.7955923),
     "Half Way Tree Mall": (18.0107583, -76.7967194),
     "York Plaza": (18.0099319, -76.7982915),
     "Winchester Business Center": (18.0114689, -76.7944081),
@@ -140,8 +141,7 @@ _parkingLots = {
     "NCB Attrium Parking": (18.0118534, -76.7877052), 
     "Consumer Affairs Commission": (18.0110830, -76.7882631), 
     "Petroleum Corporation of Jamaica": (18.0113713, -76.7879734), 
-    #"": (), 
-    
+    #"": (),    
     "Private Parking off Constant Spring Road": (18.0370904, -76.7968781),
     #"": (), 
     #With the 'P
@@ -176,7 +176,8 @@ _parkingLots = {
     "UDC Orange Street Multi-Storey Carpark": (17.9648732, -76.7938823), #
     "King Street Parking Garage": (17.9649670, -76.7930579),# "": (), 
     "Creative Hub Parking": (17.9665253, -76.7921995),
-    "Unknown Parking": (17.9650155, -76.7894542 ),
+    "Parking for Scotia Investments & BOJ ": (17.9650155, -76.7894542 ),
+    "Ministry of Foreign Affairs" : (17.9649053, -76.7886050),
     "Scotiabank Parking Downtown": ( 17.9650844, -76.7903233),
     "UDC Car Park": (17.9679740, -76.7923571),
     "BOJ Parking A": (17.9642833, -76.7895025),
@@ -231,6 +232,5 @@ _parkingLots = {
     "Guardian Parking Musgrave Avenue": (18.0093521, -76.7810242),
     "The Gleaner Jamaica": (17.9762408, -76.7884002),
     "Johns Lane & North Street": (17.9756266, -76.7896664),
-    "Opposite Tax Administration of Jamaica": (17.9779261, -76.7886888),
-    
+    "Opposite Tax Administration of Jamaica": (17.9779261, -76.7886888),    
 }

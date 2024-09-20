@@ -693,26 +693,8 @@ class ViewMap(Frame):
         self.getLocations()
         self.setInOrder()
         self.showLocations()
-        #self.toGetDistanceExample()
-                
-    def toGetDistanceExample(self):
-        Input_place1 = "May Pen"
-        Input_place2 = "Kingston"
-
-        # Get location of the input strings
-        place1 = self.locationService.geocode(Input_place1)
-        place2 = self.locationService.geocode(Input_place2)
-
-        # Get latitude and longitude
-        Loc1_lat, Loc1_lon = (place1.latitude), (place1.longitude)
-        Loc2_lat, Loc2_lon = (place2.latitude), (place2.longitude)
-
-        location1 = (Loc1_lat, Loc1_lon)
-        location2 = (Loc2_lat, Loc2_lon)
-
-        # display the distance
-        print(distance.distance(location1, location2).km, " kms")
     
+    #this function shows all the parking lots in Kingston
     def showLocations(self):
         from parkingLots import _parkingLots
         
@@ -721,7 +703,8 @@ class ViewMap(Frame):
                 self.map_widget.set_marker(y[0], y[1], text = x, text_color = "black")
             except Exception:
                 print(f"error @ {x} with {y}")
-        
+    
+    #this function adds locations from across Jamaica, that the map can read, into a list
     def getLocations(self):
         with open(files.places_in_Jamaica) as f:
             for line in f:
@@ -777,7 +760,7 @@ class ViewMap(Frame):
         self.searchlabel = Label(self.searchFrame, text = "search", font = ('calibri', 8), bg = "#ffffff", fg = "lightgray")
         self.searchlabel.place(x = self.searchFrame_width / 2 - self.searchlabel.winfo_reqwidth(), y = 1, height = 8)
     
-    #this function is called if the expand button is pressed. it changes the search widget into a 'from-to' widget
+    #this function is called if the expand button is pressed. it changes the 'search' widget into a 'from-to' widget
     def expandEntry(self):
         #expand search canvas and draw new rectange
         self.searchFrame.config(height = self.searchFrame_height * 2)
@@ -803,11 +786,13 @@ class ViewMap(Frame):
         self.tolabel = Label(self.searchFrame, text = "to   ", font = ('calibri', 8), bg = "#ffffff", fg = "lightgray")
         self.tolabel.place(x = self.searchFrame_width / 2 - self.tolabel.winfo_reqwidth(), y = 1 + self.searchFrame_height, height = 8)
         #self.searchFrame.create_line(0,self.searchFrame_height-10,self.searchFrame_width-1,self.searchFrame_height-10, activefill="red", width = 2, tags="expand")
-        
+    
+    #this function checks for information from both Entry widgets
+    #if info exists in both, it is cleaned up and passed on to be mapped
     def mapRoute(self):
         #if the route bool is false, then there is no active routes
         if not self.hasRoute:
-            #if there is data in the entry
+            #if there is data in the 1st entry
             if len(self.findLocation.get().strip()) != 0:
                 #tries to create a location variable based off the info given
                 start_location = self.checkLocation(self.findLocation.get())
@@ -839,12 +824,15 @@ class ViewMap(Frame):
                     self.findLocation.delete(0, END)
                     self.findToLocation.delete(0, END)
     
+    #this function checks if the location searched for is in a list.
+    #if it exists, the location is editted for an easier search.
     def checkLocation(self, location):
         if location in self.locations or location.capitalize() in self.locations or location.title() in self.locations:
             return f"{location}, Jamaica"
         else:
             return location
-                          
+    
+    #this function maps a route from 1 point ('start') to another ('end')                    
     def getRoute(self, start, end):
         #sets bools value to true to ensure 'route' button is inactive
         self.hasRoute = True
@@ -869,10 +857,7 @@ class ViewMap(Frame):
         if len(route_coordinates) > 38:
             self.map_widget.set_zoom(10)
             
-        ###
-        # With self.map_widget.delete_all_path() all path on the map will be deleted.
-        ###
-    
+    #this function uses the information from the Entry widget to search through the map database
     def searchMap(self):
         #if there is data in the entry
         if len(self.findLocation.get().strip()) != 0:
@@ -898,6 +883,7 @@ class ViewMap(Frame):
                 #clears the entry of unwanted/bad/incorrect information
                 self.findLocation.delete(0, END)
     
+    #this function is called if the minimize button is pressed. it changes the 'from-to' widget into the default 'search' widget
     def reduceEntry(self):
         #resets route bool
         self.hasRoute = False
@@ -969,4 +955,5 @@ App("Kareem")
 """
 Boeing, G. (2024). Modeling and Analyzing Urban Networks and Amenities with OSMnx. Working paper.
 https://geoffboeing.com/publications/osmnx-paper/
+
 """
