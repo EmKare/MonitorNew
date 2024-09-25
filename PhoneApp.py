@@ -6,6 +6,7 @@ from tkinter.ttk import Combobox
 from time import strftime, sleep
 from PIL import ImageTk, Image
 from datetime import datetime
+from lorem_text import lorem
 import phonefiles as files
 from os import listdir
 import re

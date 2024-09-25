@@ -28,12 +28,12 @@ class EditCanvas(Tk):
         self.client = ors.Client(key = '5b3ce3597851110001cf62480f6929fa14f1415b865522ca5d94fb50')
         self.distanceService = Nominatim(user_agent = "geoapiExercises")
         
-        self.shapes = []  # to hold the newly created image
+        self.shapes = []
         
-        self.mainCanvas.create_rectangle(3, 3, 381, 731, outline = "black", width = 2, tags="rectangle")
+        self.mainCanvas.create_rectangle(3, 3, 381, 731, outline = "black", width = 2, tags="main-rectangle")
         self.decorate()
         self.create_rectangle(2,2, 382, 731, fill='snow', alpha=.6, tags = "blur")
-        self.termsAgreed = False
+        self.termsAgreed, self.canvasCleared  = False, False
         self.termsAndConditions()
         self.mainloop()
         
@@ -59,14 +59,16 @@ class EditCanvas(Tk):
             self.mainCanvas.create_image(x1, y1, image=self.shapes[-1], anchor='nw', tags = tags)
         self.mainCanvas.create_rectangle(x1, y1, x2, y2, **kwargs)
     
-    def createButtons(self):
+    def createUserButton(self):
         self.userLabelButton = Button(self.mainCanvas, bg = "white", highlightthickness=0, relief="flat", borderwidth=0, )
         image = Image.open(files.no_user)
         image = image.resize((50,50), Image.Resampling.LANCZOS)
         self.userLabel_image = ImageTk.PhotoImage(image)
         self.userLabelButton.config(image = self.userLabel_image, state = "normal")
         self.userLabelButton.place(x = self.mainCanvas.winfo_reqwidth() - self.userLabelButton.winfo_reqwidth() - 4, y = 4,)
-        
+    
+    def createButtons(self):
+        self.createUserButton()
         self.freeUseButton = Button(self.mainCanvas, bg = "forest green", fg = "white", highlightthickness=0, relief="flat", borderwidth=0, text = "Find Close-By", font = ('bold', 20), activebackground = "lightgreen", activeforeground = "white", command = self.appMap)
         self.freeUseButton.config(width = 15, height = 2)
         self.freeUseButton.place(x = int((self.width) / 2) - int(self.freeUseButton.winfo_reqwidth() / 2), y = int((self.height - 100) / 2) - 60)
@@ -76,7 +78,23 @@ class EditCanvas(Tk):
         self.reserveSpotButton.place(x = int((self.width) / 2) - int(self.reserveSpotButton.winfo_reqwidth() / 2), y = int((self.height - 100) / 2) + 60)
     
     def appMap(self):
-        pass
+        self.clearCanvasToLayMap()
+        self.userLabelButton.destroy()
+        self.freeUseButton.place_forget()
+        self.reserveSpotButton.place_forget()
+        self.map_widget = TkinterMapView(self.mainCanvas, width = self.mainCanvas.winfo_reqwidth() - 8, height = self.mainCanvas.winfo_reqheight() - 8, corner_radius = 2)
+        self.map_widget.place(x = 4, y = 4)
+        self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom = 22)
+        self.map_widget.set_position(18.012265695689663, -76.79800557291115, marker = False)#set_position(17.9432311, -76.7466463, marker = False)
+        
+        if self.canvasCleared:
+            self.createUserButton()
+            self.mainCanvas.create_text(375, self.height - 32, text = 'Capstone Group 3', font = ('bold', 6), anchor = "ne", tags = 'group', activefill = "black")
+        
+    def clearCanvasToLayMap(self):
+        self.mainCanvas.delete("shapes")
+        self.mainCanvas.delete("group")
+        self.canvasCleared = True
 
     def termsAndConditions(self):
         self.mainCanvas.create_text(50, 130, text = "->", activefill = "red", tags = "terms")

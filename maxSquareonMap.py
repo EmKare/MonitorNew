@@ -20,7 +20,7 @@ map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z
 car_pos = (18.012265695689663, -76.79800557291115)#(17.9394675, -76.7665624) 
 
 map_widget.set_position(car_pos[0], car_pos[1], marker=False,)
-map_widget.set_marker(car_pos[0], car_pos[1], text="car")
+map_widget.set_marker(car_pos[0], car_pos[1], text="car", text_color = "red")
 
 weight = 0.02
 map_widget.set_polygon([(car_pos[0] + weight, car_pos[1] - weight),

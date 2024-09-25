@@ -690,9 +690,10 @@ class ViewMap(Frame):
         self.distanceService = Nominatim(user_agent="geoapiExercises")
         self.__weight_constant = 0.0001
         self.locations = []
+        self.allLocations = []
         self.getLocations()
         self.setInOrder()
-        self.showLocations()
+        #self.showLocations()
     
     #this function shows all the parking lots in Kingston
     def showLocations(self):
@@ -827,8 +828,10 @@ class ViewMap(Frame):
     #this function checks if the location searched for is in a list.
     #if it exists, the location is editted for an easier search.
     def checkLocation(self, location):
+        if location == "UCC" or location == "ucc" or location == "Ucc":
+            return "University of the Commonwealth Caribbean, Jamaica"
         if location in self.locations or location.capitalize() in self.locations or location.title() in self.locations:
-            return f"{location}, Jamaica"
+            return f"{location}, Jamaica"            
         else:
             return location
     
@@ -863,9 +866,9 @@ class ViewMap(Frame):
         if len(self.findLocation.get().strip()) != 0:
             #dd
             the_location = self.checkLocation(self.findLocation.get())
-            print(the_location)
             #tries to create a location variable based off the info given
-            location = self.locationService.geocode(the_location)
+            location = self.locationService.geocode(query=the_location, exactly_one=True)
+
             #if the variable is created sucessfully,
             if location:
             #    self.mapCanvas.destroy() 
@@ -876,7 +879,7 @@ class ViewMap(Frame):
                 self.map_widget.set_marker(location.latitude, location.longitude, text = location.address, text_color = "black")
                 #sets the zoom
                 self.map_widget.set_zoom(14)
-                print(location.address)
+                print(location)
                 print(f"long: {location.longitude}, lat: {location.latitude}")
             #if the variable is not created sucessfully,
             else:

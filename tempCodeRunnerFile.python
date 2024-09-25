@@ -1,33 +1,18 @@
-# Python program to temporarily remove a 
-# Tkinter widget without using just place 
+import tkinter as tk
+import tkintermapview
 
-# Import the Tkinter library 
-from tkinter import *
+root = tk.Tk()
+map_widget = tkintermapview.TkinterMapView(root, width=800, height=600)
+map_widget.pack()
 
-# Create a GUI app 
-app=Tk() 
+# Set the initial map position
+map_widget.set_position(40.7128, -74.0060)  # New York City
 
-# Set the title and geometry of the window 
-app.title('Remove Tkinter Widget') 
-app.geometry("600x400") 
+# Create a Canvas to add text
+canvas = tk.Canvas(map_widget, bg="transparent")
+canvas.pack()
 
-# Make a function to remove the widget 
-def remove_widget(): 
-    label.place_forget()
-    button.config(command=append_widget,text="Append Widget")
-    
-def append_widget(): 
-    label.place(relx=0.5, rely=0.3, anchor=CENTER)
-    button.config(command=remove_widget, text="Remove Widget")
+# Add text to the Canvas
+text_id = canvas.create_text(10, 10, anchor="nw", text="Hello, TkinterMapView!", fill="red")
 
-# Create a label widget to display text 
-label=Label(app, text="Tkinter Widget", font='Helvetica 20 bold') 
-label.place(relx=0.5, rely=0.3, anchor=CENTER) 
-
-# Create a button to remove text 
-button=Button(app, text="Remove Widget", command=remove_widget) 
-button.place(relx=0.5, rely=0.7, anchor=CENTER) 
-
-# Make infinite loop for displaying app 
-# on the screen 
-app.mainloop()
+root.mainloop()
