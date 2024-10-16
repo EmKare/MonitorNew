@@ -1,30 +1,7 @@
 from files import rel_path
-
-class GetLot:
-    def __init__(self):        
-        self.listOfFolders = list(self.folders_in(rel_path)) #folder names yielded will be added to list
-        self.list_Len = len(self.listOfFolders) #unsure if still needed
-        #self.ParkingLots = [] #All 4 parking Lots are here
-        #self.showAll() #adds parking lots to a list
-        #for lot in self.listOfFolders:
-        #    print(lot.ParkingLot_sides)
-                
-            #print(lot.ParkingLot_name)
-        #print(self.listOfFolders[0])
-        
-    def folders_in(self, path_to_parent:str):
-        from os import path, listdir
-        for foldername in listdir(path_to_parent): #opens main folder to check
-            if path.isdir(path.join(path_to_parent,foldername)): #if the item checked is another folder...
-                yield foldername #return name of each foler
-                
-    def showAll(self):
-        for foldername in self.listOfFolders:
-            lot = ParkingLotInfo(rel_path, foldername) #creates object of class 
-            self.ParkingLots.append(lot) #adds object to a list
                 
 class ParkingLotInfo:
-    def __init__(self, rel_path:str, lotname:str):
+    def __init__(self, lotname:str, rel_path = rel_path,):
         self.path = rel_path + lotname + "/"  #sets class path
         file_type = ".txt" #to be appended to future file paths
         self.spots = f"{self.path}{lotname}{file_type}" #file with all spots in parking lot
@@ -33,11 +10,10 @@ class ParkingLotInfo:
         self.type = f"{self.path}{lotname}_type{file_type}" #file with parking lot columns and lot numbers
         self.name = f"{self.path}{lotname}_name{file_type}"
         self.imagepath = f"{self.path}{lotname}_logo.png"
-        #self.amount = f"{self.path}{lotname}_amountAvailable{file_type}"
         
         self.newsize = (350, 300)
         
-        self.ParkingLot_name = self.getName() #name of the parking lot
+        #self.ParkingLot_name = self.getName() #name of the parking lot
         self.ParkingLot_mapcontents = self.getContents() #gets the map layout for the parking lot
         self.ParkingLot_sides = [] #list for parking lot's rows and lot numbers
         self.ParkingLot_spotsStatuses = [] #list for all spots in parking lot
@@ -65,14 +41,6 @@ class ParkingLotInfo:
     def getImage(self):
         from PIL import ImageTk, Image
         self.image = ImageTk.PhotoImage(Image.open(f"{self.imagepath}").resize((self.newsize), Image.Resampling.LANCZOS))
-
-    """       
-    def getReadings(self):
-        with open(self.amount) as f:
-            line = f.readline()
-            if self.ParkingLot_amountAvailable is not int(line):
-                self.ParkingLot_amountAvailable = int(line)
-    """
                 
     def getSides(self):
         import re
@@ -101,5 +69,3 @@ class ParkingLotInfo:
             if spot[1] == "A": #if the spot is marked with an "A", meaning available...
                 self.ParkingLot_availableSpots.append(spot) #add that spot to the available spots list 
         self.ParkingLot_amountAvailable = len(self.ParkingLot_availableSpots)
-
-#GetLot()

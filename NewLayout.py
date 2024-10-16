@@ -828,7 +828,7 @@ class ViewMap(Frame):
     #this function checks if the location searched for is in a list.
     #if it exists, the location is editted for an easier search.
     def checkLocation(self, location):
-        if location == "UCC" or location == "ucc" or location == "Ucc":
+        if location == "UCC":# or location == "ucc" or location == "Ucc":
             return "University of the Commonwealth Caribbean, Jamaica"
         if location in self.locations or location.capitalize() in self.locations or location.title() in self.locations:
             return f"{location}, Jamaica"            

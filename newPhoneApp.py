@@ -1,14 +1,23 @@
-from tkinter import Tk, ttk, Button, LabelFrame, Canvas, Scrollbar,\
-Listbox, Label, Entry, Frame, font, NW, RIGHT, LEFT, BOTH, Y, END
-from getParkingLot import GetLot, ParkingLotInfo
+from tkinter import Tk, ttk, Button, LabelFrame, Canvas, Label, NW, Checkbutton, BooleanVar, \
+    Scrollbar, Frame, RIGHT, LEFT, BOTH, Y, Listbox, END, INSERT, Text, CENTER,\
+        Entry, ARC, font, messagebox
+from parkingLots_newWith_list import _parkingLots
+from getParkingLot_NEW import ParkingLotInfo
+from tkintermapview import TkinterMapView
+from geopy.geocoders import Nominatim
 from random import choice, randint
-from tkinter.ttk import Combobox
 from time import strftime, sleep
+from tkinter.ttk import Combobox
 from PIL import ImageTk, Image
+import openrouteservice as ors
 from datetime import datetime
 from lorem_text import lorem
-import phonefiles as files
+from itertools import islice
+from geopy import distance
+import phonefiles as files 
 from os import listdir
+from time import time
+import webview as web
 import re
 
 class FindMeParkingApp(Tk):
@@ -21,6 +30,8 @@ class FindMeParkingApp(Tk):
         self.geometry(f'{self.width}x{self.height}+300+0')
         #window cannot be resized
         self.resizable(False, False)
+        self.wm_minsize(self.width, self.height)
+        self.wm_maxsize(self.width, self.height)
         self.title("Find Me Parking App")
         self.config(cursor = "hand2")
         #
@@ -30,7 +41,7 @@ class FindMeParkingApp(Tk):
         self.distanceAway = None
         #booleans for each screen
         self.homeScreen_bool = False
-        self.appLoadingScreen_bool = False
+        self.apLoadingScreen_bool = False
         self.appMainScreen_bool = False        
         self.gettingLotsScreen_bool = False
         self.displayingLotsScreen_bool = False
@@ -45,7 +56,7 @@ class FindMeParkingApp(Tk):
         self.exp_month, self.exp_year = None, None
         self.username, self.password = "", ""
         #list with month numbers for card expiration date     
-        self.months = ["01","02","03","04","05","06","07","08","09","10","11","12"]
+        self.months = [f"0{i}" if i < 10 else f"{i}" for i in range(1,13)] #["01","02","03","04","05","06","07","08","09","10","11","12"] 
         
         #global variables set for easy data access
         global gender
@@ -71,6 +82,23 @@ class FindMeParkingApp(Tk):
         global username
         username = ""
         
+        #NEW
+        
+        self.client = ors.Client(key = '5b3ce3597851110001cf62480f6929fa14f1415b865522ca5d94fb50')
+        self.distanceService = Nominatim(user_agent = "geoapiExercises")        
+        
+        self.termsAgreed = bool(self.checkTerms())
+        
+        self.available_lots = {}
+        self.more_available_lots = {}
+        self.COUNT = 1
+        self.left_click, self.canvasCleared, self.right_click  = False, False, False
+        self.first_weight_const = 0.000001
+        self.colours = ['purple', 'gray', 'cadetblue', 'orange', 'pink', 'beige', 'green', 'darkgreen',
+                        'lightgreen', 'darkblue', 'lightblue', 'purple', 'lightgray', 'black']
+        
+        #NEW
+        
         #demo email, to be removed
         self.demoEmail = 'user@mail.com'
         #how many unread mails are in the user inbox
@@ -84,16 +112,18 @@ class FindMeParkingApp(Tk):
         #UNSURE
         self.createUser = True
         #creates a an object of the 'GetLot' class
-        self.parkingLots = GetLot()
+        #self.parkingLots = GetLot()
         #size for parking lot company logo images 
         self.newsize = (350, 300)
         #frame that surrounds working area
         self.labelFrame = LabelFrame(self, width = self.width - 10, height = self.height - 10)
-        self.labelFrame.place(x = 5, y = 5)
+        self.labelFrame.pack()#lace(x = 5, y = 5)
         #checks if user already exists
         self.userCheck()
         #calls 'homePage' function
         self.homePage()
+        
+        self.deiconify()
         #calls the tkinter 'mainloop' function to start app
         self.mainloop()
 
@@ -115,12 +145,15 @@ class FindMeParkingApp(Tk):
                     self.cvv = lines[9].strip('\n')
                     self.exp_month = lines[10].strip('\n')
                     self.exp_year = lines[11].strip('\n')
-                    #self.userExists = True
-                    self.userExists = False
-                # else:
-                    pass
+                    self.userExists = True
+                    #self.userExists = False
         except:
             pass
+        self.userMetTerms()
+        
+    def userMetTerms(self):
+        if self.userExists:
+            self.termsMet(1)
 
     #this function sets a canvas window and a the homescreen image
     def homePage(self):
@@ -163,12 +196,89 @@ class FindMeParkingApp(Tk):
             if 98 < event.x < 195  and 220 < event.y < 313:
                 self.unbindEvent = 1
                 self.mainCanvas.delete("homeScreen")
-                self.start()
+                if not self.termsAgreed:
+                    self.termsAndConditions()
+                else:
+                    self.start()
             #if the event occured on or around the mailbox logo
             elif 10 < event.x < 107  and 10 < event.y < 107:
                 self.unbindEvent = 1 
                 self.mainCanvas.delete("homeScreen")
                 self.mail()
+                
+    def checkTerms(self):
+        try:
+            with open(f"{files.user_profile}terms_met.txt","r") as file:                
+                return int(file.read())
+        except Exception:
+            return 0
+                
+    def termsAndConditions(self):
+        self.mainCanvas.create_rectangle(3, 3, 381, 731, outline = "black", width = 2, tags="main-rectangle")
+        self.decorateCanvas(self.mainCanvas)
+        self.create_rectangle(self.mainCanvas,2,2, 382, 731, fill='snow', alpha=.6, tags = "blur")
+        
+        self.mainCanvas.create_text(50, 130, text = "->", activefill = "red", tags = "terms")
+        self.mainCanvas.create_text(375, self.height - 32, text = 'Capstone Group 3', font = ('bold', 6), anchor = "ne", tags = 'group', activefill = "black")
+               
+        self.termsAndConditionsBox = Text(self.mainCanvas, width = 32, height = 19, font = ("calibri", 12), relief = "flat", )
+        self.termsAndConditionsBox.place(x = int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2), y = int(self.mainCanvas.winfo_reqheight() / 2) - int(self.termsAndConditionsBox.winfo_reqheight()) + 150)
+        self.termsAndConditionsBox.insert(INSERT, "\n\n")
+        self.termsAndConditionsBox.insert(INSERT, self.getText())
+        
+        self.headerLabel = Label(self.mainCanvas, text = "TERMS AND CONDITIONS", font = ("calibri", 14, 'underline'), bg = "#ffffff")
+        self.headerLabel.place(x = int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2), y = 132, width = self.termsAndConditionsBox.winfo_reqwidth(), height = 30)
+        
+        self.mainCanvas.create_rectangle(
+            int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2) - 2, 
+            int(self.mainCanvas.winfo_reqheight() / 2) - int(self.termsAndConditionsBox.winfo_reqheight()) - int(self.headerLabel.winfo_reqheight()) + 158, 
+            int(self.mainCanvas.winfo_reqwidth() / 2) + int(self.termsAndConditionsBox.winfo_reqwidth() / 2) + 2, 
+            int(self.mainCanvas.winfo_reqheight() / 2) + int(self.termsAndConditionsBox.winfo_reqheight()) + int(self.headerLabel.winfo_reqheight()) - 243, 
+        outline = "black", width = 2, tags = "terms")
+        
+        self.check_variable = BooleanVar()
+        self.agree_disagree = Checkbutton(self.mainCanvas, text = "   I accept these Terms and Conditions  ", onvalue = 1, offvalue = 0, font = ('bold', 10), bg = "#ffffff", variable = self.check_variable, command = self.toggle_button_state, )
+        self.agree_disagree.place(x = int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2), y = int(self.mainCanvas.winfo_reqheight() / 2) + int(self.termsAndConditionsBox.winfo_reqheight()) + int(self.headerLabel.winfo_reqheight()) - 242,)        
+        
+        self.mainCanvas.create_rectangle(
+            int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2) - 2,
+            int(self.mainCanvas.winfo_reqheight() / 2) + int(self.termsAndConditionsBox.winfo_reqheight()) + int(self.headerLabel.winfo_reqheight()) - 244, 
+            int(self.mainCanvas.winfo_reqwidth() / 2) + int(self.termsAndConditionsBox.winfo_reqwidth() / 2) + 2, 
+            int(self.mainCanvas.winfo_reqheight() / 2) + int(self.termsAndConditionsBox.winfo_reqheight()) + int(self.headerLabel.winfo_reqheight()) - 214, 
+        outline = "black", width = 2, tags = "terms")
+        
+        self.acceptTermsAndConditionButton = Button(self.mainCanvas, text = "continue", font = ('bold', 12), relief = "flat", state = "disabled", command = self.termsAndContidionsAgreed)
+        self.acceptTermsAndConditionButton.place(x = int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2) - 2, y = int(self.mainCanvas.winfo_reqheight() / 2) + int(self.termsAndConditionsBox.winfo_reqheight()) + int(self.headerLabel.winfo_reqheight()) - 213, width = int(self.termsAndConditionsBox.winfo_reqwidth() + 4))
+
+    def termsAndContidionsAgreed(self):
+        self.termsMet(1)
+        self.mainCanvas.delete("terms")
+        self.mainCanvas.delete("blur")
+        self.mainCanvas.delete("shapes")
+        self.agree_disagree.destroy()
+        self.headerLabel.destroy()
+        self.termsAndConditionsBox.destroy()
+        self.acceptTermsAndConditionButton.destroy()        
+        self.start()
+    
+    def termsMet(self, met: int):
+        self.termsAgreed = True
+        with open(f"{files.user_profile}terms_met.txt","w") as file:
+            file.write(str(met))
+        
+    def getText(self):
+        text = lorem.words(15) + "\n\n" + lorem.paragraph()
+        cap = 0
+        while cap <= 12:
+            text = f"{text}\n\n{cap+1})     {lorem.paragraph()}"
+            cap += 1
+        return text + "\n\nNB:     " + lorem.words(15)
+    
+    def toggle_button_state(self):
+        if self.check_variable.get():
+            self.acceptTermsAndConditionButton.config(state = "normal")
+        else:
+            self.acceptTermsAndConditionButton.config(state = "disabled")
 
     #this function checks where on 'mainCanvas' the mouse was clicked twice (event)
     #and if the event happened in a certain region, certain specific action would take place
@@ -364,6 +474,8 @@ class FindMeParkingApp(Tk):
                 self.mainCanvas.delete("text")
                 self.p.destroy()                
                 self.userExists = True
+                self.termsAgreed = True
+                self.userMetTerms()
                 self.checkWhichScreenIWasOn()
         else:
             #function calls itself
@@ -505,10 +617,692 @@ class FindMeParkingApp(Tk):
         #create profile button
         self.create_userLabelButton()        
         #creates a main button to get and display available lots and spots
-        self.getReadingButton = Button(self.mainCanvas, bg = "forest green", fg = "white", command = lambda: self.getLotsLoading(), highlightthickness=0, relief="flat", borderwidth=0, text = "Find Me Parking", font = ('bold', 20), activebackground = "lightgreen", activeforeground = "white")
-        self.getReadingButton.config(width = 15, height = 2)
-        self.getReadingButton.place(x = int((self.width) / 2) - int(self.getReadingButton.winfo_reqwidth() / 2), y = int((self.height - 100) / 2) - 10)
+        self.getReadingButton = Button(self.mainCanvas, bg = "forest green", fg = "white", highlightthickness=0, relief="flat", borderwidth=0, text = "Find Close-By", font = ('bold', 20), activebackground = "lightgreen", activeforeground = "white", command = self.appMap,) #command = lambda: self.getLotsLoading(),)
+        self.getReadingButton.config(width = 15, height = 2) #freeUseButton
+        self.getReadingButton.place(x = int((self.width) / 2) - int(self.getReadingButton.winfo_reqwidth() / 2), y = int((self.height - 100) / 2) - 60)
         self.mainCanvas.bind("<Double-Button-1>", self.backtoHome)
+                
+        self.reserveSpotButton = Button(self.mainCanvas, bg = "forest green", fg = "white", highlightthickness=0, relief="flat", borderwidth=0, text = "Reserve Parking", font = ('bold', 20), activebackground = "lightgreen", activeforeground = "white")
+        self.reserveSpotButton.config(width = 15, height = 2)
+        self.reserveSpotButton.place(x = int((self.width) / 2) - int(self.reserveSpotButton.winfo_reqwidth() / 2), y = int((self.height - 100) / 2) + 60)        
+        
+
+#NEW PROGRAM STUFF       
+        
+    def appMap(self):
+        try:
+            self.clearCanvasToLayMap()
+        except Exception:
+            pass
+        try:
+            self.userLabelButton.destroy()
+        except Exception:
+            pass
+        try:
+            self.getReadingButton.place_forget()
+        except Exception:
+            pass
+        try:
+            self.reserveSpotButton.place_forget()
+        except Exception:
+            pass
+        self.map_widget = TkinterMapView(self.mainCanvas, width = self.mainCanvas.winfo_reqwidth() - 8, height = self.mainCanvas.winfo_reqheight() - 8, corner_radius = 2)
+        self.map_widget.place(x = 4, y = 4)
+        self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom = 22,)
+        coordinates_tuple = (18.012265695689663, -76.79800557291115)#17.9432311, -76.7466463
+        self.map_widget.set_position(coordinates_tuple[0], coordinates_tuple[1], marker = False,)
+        
+        self.map_widget.set_zoom(16)
+        self.map_widget.add_left_click_map_command(self.left_click_event)
+        
+        self.left_click_event(coordinates_tuple)
+        
+        #0.005, 
+        #if self.canvasCleared:
+            #self.createUserButton()
+            #self.mainCanvas.create_text(375, self.height - 32, text = 'Capstone Group 3', font = ('bold', 6), anchor = "ne", tags = 'group', activefill = "black")
+            
+    def create_squares(self, car_pos: tuple):
+        self.map_widget.set_position(car_pos[0], car_pos[1], marker = False)
+        self.map_widget.set_marker(car_pos[0], car_pos[1], text = "YOU", text_color = "black")
+        FIRST_LIMIT = 8
+        
+        global COUNT, COLOUR
+        btn_width, btn_height = 30, 30
+        COLOUR = 0
+        second_weight_const = 0.02
+        EXCLUDE = False
+        WEIGHT = self.first_weight_const
+        
+        doubleup = "\u21EE"
+        up = "\u21E7"
+        #down = "\u21E9"
+        
+        if not self.right_click:
+            self.map_widget.add_right_click_menu_command(label = "Restart", pass_coords = False, command = lambda: self.right_click_event(btn_width, btn_height, up, doubleup), )
+            self.right_click = True
+        
+        while len(self.available_lots) != FIRST_LIMIT :
+            for name, coord in _parkingLots.items():
+                self.check_if_in_range(car_pos, name, coord, WEIGHT)
+            WEIGHT += self.first_weight_const
+            self.COUNT += 1
+            if WEIGHT >= second_weight_const:
+                EXCLUDE = True
+                break
+
+        show_more = False        
+        if len(self.available_lots) > 0:
+            
+            for name in self.available_lots.keys():            
+                self.calculate_route_distance(car_pos, name, (self.available_lots[name][0][0], self.available_lots[name][0][1]), self.available_lots)
+            
+            if not EXCLUDE:
+                self.exclude_already_added(car_pos, WEIGHT, second_weight_const)
+                show_more = True
+                
+                cap = 5
+                for lot in islice(self.more_available_lots.items(), cap):
+                    self.calculate_route_distance(car_pos, lot[0], (lot[1][0][0], lot[1][0][1]), self.more_available_lots)
+
+        self.addSearch_andResults(car_pos, up, doubleup, btn_width, btn_height, show_more)
+        
+    def check_if_in_range(self, car_pos: tuple, name: str, coord: list, weight: float):    
+        lat = coord[0][0]
+        lon = coord[0][1]
+        if car_pos[0] + weight > lat and lon > car_pos[1] - weight:
+            if car_pos[0] + weight > lat and lon < car_pos[1] + weight:
+                if car_pos[0] - weight < lat and lon < car_pos[1] + weight:
+                    if car_pos[0] - weight < lat and lon > car_pos[1] - weight:
+                        self.add_to_map(car_pos, name, coord, weight)                    
+
+    def add_to_map(self, car_pos: tuple, name: str, coord: list, weight: float):
+        if name not in self.available_lots.keys():
+            self.available_lots[name] = coord
+
+    def calculate_route_distance(self, car_pos: tuple, name: str, found_lot: tuple, lots_dict: dict, draw_marker: bool = False, draw_route: bool = False,): 
+        route = self.client.directions(coordinates = [[car_pos[1], car_pos[0]], [found_lot[1], found_lot[0]]],
+                                profile = 'driving-car', format = 'geojson',)
+        route_coordinates = [tuple(reversed(coord)) for coord in route['features'][0]['geometry']['coordinates']]
+        route_coordinates.insert(0, tuple(car_pos))
+        route_coordinates.insert(len(route_coordinates), (found_lot[0], found_lot[1]))
+        if draw_marker:
+            self.map_widget.set_marker(found_lot[0],found_lot[1], text = name, text_color = "green")
+        if draw_route:
+            self.map_widget.set_path(position_list = route_coordinates, color = self.colours[COLOUR], width = 2)
+            COLOUR += 1
+            
+        route_distance, start, end = 0, 0, 1
+        while end < len(route_coordinates): # <<<<<<<<< HERESO
+            route_distance += distance.distance(route_coordinates[start], route_coordinates[end]).km
+            start += 1
+            end += 1
+
+        lots_dict[name].append(distance.distance(car_pos, found_lot).km)
+        lots_dict[name].append(route_coordinates)
+        lots_dict[name].append(route_distance)
+
+    def exclude_already_added(self, car_pos: tuple, weight2: float, final_weight: float):
+        while weight2 <= final_weight:
+            for name, coord in _parkingLots.items():
+                if name not in self.available_lots.keys():
+                    self.check_for_others(car_pos, name, coord, weight2)
+                weight2 += self.first_weight_const       
+                    
+    def check_for_others(self, car_pos: tuple, name: str, coord: list, weight2: float):
+        lat = coord[0][0]
+        lon = coord[0][1]
+        if car_pos[0] + weight2 > lat and lon > car_pos[1] - weight2:
+            if car_pos[0] + weight2 > lat and lon < car_pos[1] + weight2:
+                if car_pos[0] - weight2 < lat and lon < car_pos[1] + weight2:
+                    if car_pos[0] - weight2 < lat and lon > car_pos[1] - weight2:
+                        if name not in self.more_available_lots.keys():
+                            self.more_available_lots[name] = coord
+
+    def addSearch_andResults(self, car_pos:tuple, up:str, doubleup:str, btn_width:int, btn_height:int, show_more:bool = False,):
+
+        self.entry_width = 220
+        search_colour = "gray78"
+        self.results_canvas_mini_height = 50
+        self.results_canvas_mid_height = 380
+        self.results_canvas_full_height = 710
+        
+        canvas_height = self.results_canvas_mini_height       
+        
+        self.searchFrame = Frame(self.mainCanvas, bd = 0, bg = search_colour, width = self.mainCanvas.winfo_reqwidth() - 100, height = 32)
+        self.searchFrame.place(x = 50, y = 20,)
+        
+        self.findLocation = Entry(self.searchFrame, bd = 0, bg = search_colour, font = ('bold',15), relief = "flat", highlightthickness = 0, border = 0, fg = "gray18")
+        self.findLocation.place(x = 10, y = 1, width = self.entry_width, height = 30)
+        
+        self.clearButton = Button(self.searchFrame, text = "x", relief = "flat", bg = search_colour, activebackground = "#ffffff", bd = 0, highlightthickness = 0, border = 0, activeforeground = "red", command = lambda : self.clearEntry(),)
+        self.clearButton.place(x = self.entry_width + 10 , y = 1, width = 20, height = 30)
+        
+        self.searchButton = Button(self.searchFrame, text = "find", relief = "flat", bg = "lightgray", fg = "green", activebackground = "lightgray", activeforeground = "green", bd= 0, highlightthickness = 0, border = 0,)# command = lambda : self.searchMap())
+        self.searchButton.place(x = self.searchFrame.winfo_reqwidth() - 36, y = 1, width = 35, height = 30)
+        
+        self.resultsCanvas = Canvas(self.mainCanvas, bg = search_colour, bd= 0, highlightthickness = 0, border = 0,)
+        self.resultsCanvas.place(x = 10, y = self.mainCanvas.winfo_reqheight() - canvas_height - 4, width = self.mainCanvas.winfo_reqwidth() - 20, height = canvas_height,)
+        #self.can_it_curve(self.resltsCanvas, self.mainCanvas.winfo_reqwidth() - 20, canvas_height, "#ffffff",topleft=True, topright=True)
+        
+        self.resultsCanvas.create_rectangle(0,0,self.mainCanvas.winfo_reqwidth()-21,canvas_height+1, width = 1, tags = "results-rect")
+        
+        self.resultsLabel = Label(self.resultsCanvas, text = f"Results:  {len(self.available_lots)}", font = ("calibri", 18, 'bold'), bg = search_colour)
+        self.resultsLabel.place(x = 10, y = 7)        
+        
+        #self.resultsCanvas.create_line(int(self.resultsCanvas.winfo_reqwidth()/2),0,int(self.resultsCanvas.winfo_reqwidth()/2),100, width = 5, activefill = "red")
+        
+        self.resultsCanvas.create_line(159,10,221,10, width = 5, fill = "gray64")
+        
+        self.results_halfScreen = Canvas(self.resultsCanvas, relief = "flat", bg = search_colour, borderwidth = 0, bd = 0, highlightthickness = 0, border = 0,)
+        self.results_halfScreen.create_text((btn_width/2, btn_height/2), angle = "0", anchor = "center", text = up, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")
+        self.mini_panel, self.midi_panel, self.maxi_panel = True, False, False
+        #self.checkPanelSize()
+        
+        self.results_halfScreen.bind("<ButtonPress-1>", 
+                                     lambda event, 
+                                     a = car_pos, 
+                                     b = btn_width, 
+                                     c = btn_height, 
+                                     d = up,
+                                     e = doubleup,
+                                     #f = results_canvas_mini_height,
+                                     #g = results_canvas_full_height
+                                     : 
+                                     self.midimize_resultsCanvas(event, a, b, c, d, e, ))
+        
+        self.results_halfScreen.bind("<ButtonRelease-1>", lambda ev: ev.widget.configure(relief = "flat"))
+        self.results_halfScreen.place(x = 159, y = 15, width = btn_width, height = btn_height)     
+        
+        self.results_fullScreen = Canvas(self.resultsCanvas, relief = "flat", bg = search_colour, borderwidth = 0, bd = 0, highlightthickness = 0, )
+        self.results_fullScreen.create_text((btn_width/2, btn_height/2), angle = "0", anchor = "center", text = doubleup, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")
+        self.results_fullScreen.bind("<ButtonPress-1>", lambda event, 
+                                     a = car_pos, 
+                                     b = btn_width, 
+                                     c = btn_height, 
+                                     d = up,
+                                     e = doubleup,
+                                     #f = results_canvas_mini_height,
+                                     #g = results_canvas_mid_height
+                                     : 
+                                     self.maximize_resultsCanvas(event, a, b, c, d, e,))
+        self.results_fullScreen.bind("<ButtonRelease-1>", lambda ev: ev.widget.configure(relief = "flat"))
+        self.results_fullScreen.place(x = 191, y = 15, width = btn_width, height = btn_height)
+        
+        self.sideWidgetDataPanel = Canvas(self.resultsCanvas, bg = "lightblue", bd= 0, highlightthickness = 0, border = 0,)
+        self.sideWidgetDataPanel.place(x = 2, y = 60, width = self.resultsCanvas.winfo_reqwidth() - 18, height = canvas_height - 60 )
+        
+        self.populate_scroll(car_pos, btn_width, btn_height, up, doubleup)
+        
+        if show_more:
+            ADDITIONAL = 5
+            self.show_more_button = Button(self.resultsCanvas, text = "Show More", bg = search_colour, font = ("calibri", 10, 'bold', 'underline'), highlightthickness = 0, relief = "flat", borderwidth = 0, fg = "black", command = lambda: self.show_more_lots(car_pos, ADDITIONAL,btn_width,btn_height,up,doubleup))
+            self.show_more_button.place(x = self.resultsCanvas.winfo_reqwidth() - 120, y = 13, width = 80, height = 30)
+        
+        self.closeResults = Button(self.resultsCanvas, text = "X", font = ("calibri", 10, 'normal',), relief = "flat", fg = "#ffffff", bg = "gray64", activeforeground = "black", activebackground = "gray64", bd = 0, highlightthickness = 0, border = 0, command = lambda: self.right_click_event(btn_width, btn_height, up, doubleup))
+        self.closeResults.place(x = self.resultsCanvas.winfo_reqwidth() - 40, y = 7, width = 20, height = 20)
+        
+    def checkPanelSize(self, car_pos:tuple, btn_width:int, btn_height:int, arrow1:str, arrow2:str,):
+        if self.mini_panel:
+            pass
+        if self.midi_panel:
+            pass
+        if self.maxi_panel:
+            global mid_event, max_event
+            if mid_event is not None:
+                self.midimize_resultsCanvas(mid_event, car_pos, btn_width, btn_height, arrow1, arrow2)
+            else:
+                self.midimize_resultsCanvas(max_event, car_pos, btn_width, btn_height, arrow1, arrow2)            
+
+    def show_more_lots(self, car_pos:tuple, additional:int, btn_width:int, btn_height:int, arrow1:str, arrow2:str,):    
+        count = 0
+        keys_to_remove = []
+
+        for key in self.more_available_lots:
+            if count < additional:
+                keys_to_remove.append(key)
+                count += 1
+            else:
+                break
+
+        for key in keys_to_remove:
+            self.calculate_route_distance(car_pos, key, (self.more_available_lots[key][0][0], self.more_available_lots[key][0][1]), self.more_available_lots, draw_marker = False)
+            self.available_lots[key] = self.more_available_lots[key]
+            del self.more_available_lots[key]
+        
+        self.resultsLabel.config(text = f"Results:  {len(self.available_lots)}")
+        
+        self.populate_scroll(car_pos,btn_width,btn_height,arrow1,arrow2)
+        
+    def minimize_resultsCanvas(self, event, car_pos:tuple, btn_width:int, btn_height:int, arrow1:str, arrow2:str, ):
+        self.mini_panel, self.midi_panel, self.maxi_panel = True, False, False
+        self.map_widget.set_position(car_pos[0] , car_pos[1], marker = False,)
+        canvas_height = self.results_canvas_mini_height
+        event.widget.configure(relief="sunken", border = 1,)
+        self.results_halfScreen.delete("arrow")
+        self.results_fullScreen.delete("arrow")
+        self.resultsCanvas.delete("results-rect")
+        
+        self.resultsCanvas.create_rectangle(0,0,self.mainCanvas.winfo_reqwidth()-21,canvas_height+1, width = 1, tags = "results-rect")
+        
+        try:
+            self.results_halfScreen.unbind("<ButtonPress-1>")
+        except Exception:
+            pass
+        
+        try:
+            self.results_fullScreen.unbind("<ButtonPress-1>")
+        except Exception:
+            pass
+        
+        self.results_halfScreen.bind("<ButtonPress-1>", 
+                                     lambda event, 
+                                     a = car_pos, 
+                                     b = btn_width, 
+                                     c = btn_height, 
+                                     d = arrow1,
+                                     e = arrow2,
+                                     #f = canvas_height,
+                                     #g = canvas_height3
+                                     : 
+                                     self.midimize_resultsCanvas(event, a, b, c, d, e, ))
+
+        self.results_fullScreen.bind("<ButtonPress-1>", lambda event, 
+                                     a = car_pos, 
+                                     b = btn_width, 
+                                     c = btn_height, 
+                                     d = arrow1,
+                                     e = arrow2,
+                                     #f = canvas_height,
+                                     #g = canvas_height2
+                                     : 
+                                     self.maximize_resultsCanvas(event, a, b, c, d, e, ))
+        
+        self.results_halfScreen.create_text((btn_width/2, btn_height/2), angle = "0", anchor = "center", text = arrow1, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")
+        
+        self.results_fullScreen.create_text((btn_width/2, btn_height/2), angle = "0", anchor = "center", text = arrow2, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")
+        
+        self.resultsCanvas.place(x = 10, y = self.mainCanvas.winfo_reqheight() - canvas_height - 4, width = self.mainCanvas.winfo_reqwidth() - 20, height = canvas_height,)
+        
+        self.sideWidgetDataPanel.place(x = 2, y = 60, width = self.resultsCanvas.winfo_reqwidth() - 18, height = canvas_height - 60,)
+
+    def midimize_resultsCanvas(self, event, car_pos:tuple, btn_width:int, btn_height:int, arrow1:str, arrow2:str,):
+        global mid_event
+        mid_event = event
+        self.mini_panel, self.midi_panel, self.maxi_panel = False, True, False
+        self.map_widget.set_position(car_pos[0] - 0.004, car_pos[1], marker = False,)
+        canvas_height = self.results_canvas_mid_height
+        event.widget.configure(relief="sunken", border = 1,)
+        self.results_halfScreen.delete("arrow")
+        self.results_fullScreen.delete("arrow")
+        self.resultsCanvas.delete("results-rect")
+        
+        self.resultsCanvas.create_rectangle(0,0,self.mainCanvas.winfo_reqwidth()-21,canvas_height+1, width = 1, tags = "results-rect")
+        
+        try:
+            self.results_halfScreen.unbind("<ButtonPress-1>")
+        except Exception:
+            pass
+        
+        try:
+            self.results_fullScreen.unbind("<ButtonPress-1>")
+        except Exception:
+            pass
+        
+        self.results_halfScreen.bind("<ButtonPress-1>", 
+                                     lambda ev, 
+                                     a = car_pos, 
+                                     b = btn_width, 
+                                     c = btn_height, 
+                                     d = arrow1,
+                                     e = arrow2,
+                                     #f = canvas_height, 
+                                     #g = canvas_height3
+                                     : 
+                                     self.minimize_resultsCanvas(ev, a, b, c, d, e,))
+        
+        self.results_fullScreen.bind("<ButtonPress-1>", lambda ev, 
+                                     a = car_pos, 
+                                     b = btn_width, 
+                                     c = btn_height, 
+                                     d = arrow1,
+                                     e = arrow2,
+                                     #f = canvas_height,
+                                     #g = canvas_height2,
+                                     : 
+                                     self.maximize_resultsCanvas(ev, a, b, c, d, e, ))
+        
+        self.results_halfScreen.create_text((btn_width/2, btn_height/2), angle = "180", anchor = "center", text = arrow1, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")
+        
+        self.results_fullScreen.create_text((btn_width/2, btn_height/2), angle = "0", anchor = "center", text = arrow1, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")
+        
+        self.resultsCanvas.place(x = 10, y = self.mainCanvas.winfo_reqheight() - canvas_height - 4, width = self.mainCanvas.winfo_reqwidth() - 20, height = canvas_height,)
+        
+        self.sideWidgetDataPanel.place(x = 2, y = 60, width = self.resultsCanvas.winfo_reqwidth() - 18, height = canvas_height - 60,)
+    
+    def maximize_resultsCanvas(self, event, car_pos:tuple, btn_width:int, btn_height:int, arrow1:str, arrow2:str, ):
+        global max_event
+        max_event = event
+        self.mini_panel, self.midi_panel, self.maxi_panel = False, False, True
+        canvas_height = self.results_canvas_full_height
+        event.widget.configure(relief="sunken", border = 1,)
+        self.results_halfScreen.delete("arrow")
+        self.results_fullScreen.delete("arrow")
+        self.resultsCanvas.delete("results-rect")
+        
+        self.resultsCanvas.create_rectangle(0,0,self.mainCanvas.winfo_reqwidth()-21,canvas_height+1, width = 1, tags = "results-rect")
+        
+        try:
+            self.results_halfScreen.unbind("<ButtonPress-1>")
+        except Exception:
+            pass
+        
+        try:
+            self.results_fullScreen.unbind("<ButtonPress-1>")
+        except Exception:
+            pass
+        
+        self.results_halfScreen.bind("<ButtonPress-1>", 
+                                     lambda ev, 
+                                     a = car_pos, 
+                                     b = btn_width, 
+                                     c = btn_height, 
+                                     d = arrow1,
+                                     e = arrow2,
+                                     #f = canvas_height2, 
+                                     #g = canvas_height
+                                     : 
+                                     self.midimize_resultsCanvas(ev, a, b, c, d, e, ))
+        
+        self.results_fullScreen.bind("<ButtonPress-1>", lambda ev, 
+                                     a = car_pos, 
+                                     b = btn_width, 
+                                     c = btn_height, 
+                                     d = arrow1,
+                                     e = arrow2,
+                                     #f = canvas_height3,
+                                     #g = canvas_height,
+                                     : 
+                                     self.minimize_resultsCanvas(ev, a, b, c, d, e,))
+        
+        self.results_halfScreen.create_text((btn_width/2, btn_height/2), angle = "180", anchor = "center", text = arrow1, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")
+        
+        self.results_fullScreen.create_text((btn_width/2, btn_height/2), angle = "180", anchor = "center", text = arrow2, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")
+        
+        self.resultsCanvas.place(x = 10, y = self.mainCanvas.winfo_reqheight() - canvas_height - 4, width = self.mainCanvas.winfo_reqwidth() - 20, height = canvas_height,)
+        
+        self.sideWidgetDataPanel.place(x = 2, y = 60, width = self.resultsCanvas.winfo_reqwidth() - 18, height = canvas_height - 60,)
+
+    def populate_scroll(self, car_pos:tuple, btn_width:int, btn_height:int, arrow1:str, arrow2:str,):
+        try:
+            self.frame.destroy()
+        except Exception:
+            pass        
+        try:
+            self.main.destroy() 
+        except Exception:
+            pass
+        
+        fullstar = "\u2605"
+        nullstar = "\u2606"
+        parking_types = ["Public Parking", "Private Parking", "Paid Parking"]
+        
+        self.create_scroll(self.sideWidgetDataPanel)
+
+        for name, data_list in sorted(self.available_lots.items(), key = lambda item: item[1][2]):
+
+            c = Canvas(self.frame, bg="azure", width = self.sideWidgetDataPanel.winfo_reqwidth() - 22, height = 140,)
+            c.pack(fill="both", expand=True, )
+            
+            title = Label(c, text = name, font = ('bold', 15, 'underline'), bg = "azure")
+            title.place(x = int(c.winfo_reqwidth()/2) - int(title.winfo_reqwidth()/2), y = 5)
+            
+            review = Label(c, text = self.getReview(fullstar, nullstar), font = ('bold', 13), bg = "azure", fg= "lightgray")
+            review.place(x = 20, y = 50)
+            
+            distance = Label(c, text = f"Distance: {data_list[4]:.2f} kms", font = ('bold', 12), bg = "azure", )
+            distance.place(x = 20, y = 70)    
+            
+            parking = Label(c, text = choice(parking_types), font = ('bold', 12), bg = "azure", )
+            parking.place(x = 20, y = 90)
+            
+            open = Label(c, text = self.opening_hours(), font = ('bold', 12), bg = "azure", fg= "green")
+            open.place(x = 20, y = 115)
+            
+            url = f'https://www.google.com/maps/dir/{car_pos[0]},+{car_pos[1]}/{data_list[0][0]},+{data_list[0][1]}/'
+
+            b1 = self.setSelectButton(c, url, 15, name, data_list[1])
+            b1.place(x = c.winfo_reqwidth() - 100, y = c.winfo_reqheight() - 85, width = 80, height = 30)
+            
+            
+            b2 = self.setRouteButton(c, name, data_list[0], car_pos, data_list[3], btn_width, btn_height, arrow1, arrow2)
+            b2.place(x = c.winfo_reqwidth() - 100, y = c.winfo_reqheight() - 45, width = 80, height = 30)
+    
+    def setSelectButton(self, c:Canvas, url:str, font:int, name:str, lottype:int):
+        return Button(c, text="Select", font = ('bold', font), command = lambda : self. printer(url, name, lottype), width = 10, height = 2, highlightthickness = 0, relief = "flat", borderwidth = 0, fg = "black")
+    
+    def printer(self, url:str, name:str, lottype:int):
+        print(f"{name}")
+        print(url)
+        #Browser(self,url)
+        parkingLot = ParkingLotInfo(f"ParkingLot{lottype}")
+        
+        print(f"ParkingLot_spotsStatuses:   {len(parkingLot.ParkingLot_spotsStatuses)}")
+        print(f"ParkingLot_amountAvailable: {parkingLot.ParkingLot_amountAvailable}")
+        print(f"ParkingLot_number:          {parkingLot.ParkingLot_number}")
+        print(f"ParkingLot_sides:           {parkingLot.ParkingLot_sides}")
+        print("------------------------------------------------------------------------------------------")
+        
+    
+    def opening_hours(self):
+        type = randint(0,1)
+        if type:
+            return "Open 24 Hours"
+        else:
+            closing_times = [6,7,8,9,10]
+            return f"Open. Closes {choice(closing_times)}PM "
+    
+    def getReview(self, fullstar:str, nullstar:str):
+        max = 5
+        rating = randint(0, max)
+        if rating == 0:
+            return "No Reviews"
+        elif rating == max:
+            review = ""
+            while rating > 0:
+                review = review + fullstar
+                rating-=1
+            return review
+        else:
+            review = ""
+            extra = max - rating
+            while rating > 0:
+                review = review + fullstar
+                rating-=1
+            while extra > 0:
+                review = review + nullstar
+                extra-=1
+            return review           
+
+    def create_scroll(self, canvas_frame:Canvas):
+        self.main = Canvas(canvas_frame, bd = 0, highlightthickness = 0, border = 0,)
+        self.main.pack(side="left", fill="both", expand=True)
+        #create a new 'canvas' canvas in the 'main canvas, preset with the width and height of 'mainCanvas'
+        canvas = Canvas(self.main, bg = "#ffffff", borderwidth=0, width=canvas_frame.winfo_reqwidth(), height=100, bd= 0, highlightthickness = 0, border = 0,)#canvas_frame.winfo_reqheight())
+        ##create a new 'frame' canvas in the 'canvas' canvas, preset with the width and height of 'mainCanvas' ♠
+        self.frame = Canvas(canvas, bg = "#ffffff", borderwidth=0, width = canvas_frame.winfo_reqwidth(), height = canvas_frame.winfo_reqheight() - 200, bd= 0, highlightthickness = 0, border = 0,)
+        #'vsb' is a Scrollbar event, and it is placed on self
+        vsb = Scrollbar(self, orient="vertical", command=canvas.yview)
+        #sets a yscrollcommand for the 'canvas' widget
+        canvas.configure(yscrollcommand=vsb.set)
+        #places the scrollbar off screen
+        vsb.place(x = canvas_frame.winfo_reqwidth()+30, y = 0)
+        #packs the 'camvas' widet into the 'main' widget
+        canvas.pack(side="left", fill="both", expand=True)
+        #sets the 'frame' widget as a window of the 'canvas' widget
+        canvas.create_window((0,0), window= self.frame, anchor="nw",tags="frame",)
+        #binds 2 functions to the canvas, and 1 to the frame
+        self.frame.bind("<Configure>", lambda event, canvas = canvas: self.onFrameConfigure(event, canvas))
+        canvas.bind_all("<MouseWheel>", lambda event, canvas = canvas: self._on_mousewheel(event, canvas))
+        #canvas.bind_all("<Double-Button-1>", backtoHome)
+        
+    #this function configues the 'canvas' canvas
+    def onFrameConfigure(self, event, canvas:Canvas):
+        '''Reset the scroll region to encompass the inner frame'''
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    #this function configues the 'canvas' canvas scroll type
+    def _on_mousewheel(self, event, canvas:Canvas):
+        try:
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        except Exception:
+            pass
+        
+    def setRouteButton(self, c:Canvas, name:str, coord:tuple, car_pos:tuple, route_coordinates:list, btn_width:int, btn_height:int, arrow1:str, arrow2:str,):
+        return Button(c, text="Route", font = ('bold',15), command = lambda : self.drawSpecificRoute(car_pos, coord, name, route_coordinates, btn_width, btn_height, arrow1, arrow2), highlightthickness = 0, relief = "flat", borderwidth = 0, fg = "black")
+    
+    def drawSpecificRoute(self, car_pos:tuple, coord:tuple, name:str, route_coordinates:list, btn_width:int, btn_height:int, arrow1:str, arrow2:str,):
+        self.checkPanelSize(car_pos, btn_width, btn_height, arrow1, arrow2)
+        try:
+            self.map_widget.delete_all_path()
+        except Exception:
+            pass
+        try:
+            self.map_widget.delete_all_marker()
+        except Exception:
+            pass
+        self.map_widget.set_path(position_list = route_coordinates, color = "purple", width = 5)
+        self.map_widget.set_marker(coord[0],coord[1], text = name, text_color = "green")
+        self.map_widget.set_marker(car_pos[0], car_pos[1], text = "YOU", text_color = "black")
+
+    def clearEntry(self):
+        #self.hasRoute = False
+        self.findLocation.delete(0, END)
+        
+    def clearCanvasToLayMap(self):
+        self.mainCanvas.delete("shapes")
+        self.mainCanvas.delete("group")
+        self.canvasCleared = True
+        
+    def left_click_event(self, coordinates_tuple: tuple):
+        if not self.left_click:
+            self.COLOUR = 0
+            self.left_click = True
+            start = time()
+            print("Finding FMP parking for coordinates:", coordinates_tuple)
+            self.map_widget.set_marker(coordinates_tuple[0], coordinates_tuple[1], text = "YOU", text_color = "blue")
+            self.create_squares(coordinates_tuple)
+            end = time()
+            print(f'Execution time: {(end - start):.2f} seconds')
+            print(f"total available FMP lots found: {len(self.available_lots) + len(self.more_available_lots)}")
+            print("------------------------------------------------------------------------------------------")
+
+    def right_click_event(self, btn_width:int, btn_height:int, up:str, doubleup:str):
+        canvas_height = self.results_canvas_mini_height
+        try:
+            self.map_widget.delete_all_polygon()
+        except Exception:
+            pass
+        try:
+            self.map_widget.delete_all_marker()
+        except Exception:
+            pass
+        try:
+            self.map_widget.delete_all_path()
+        except Exception:
+            pass
+        try:
+            self.available_lots.clear()
+            self.more_available_lots.clear()
+        except Exception:
+            pass
+        try:
+            self.frame.destroy()
+        except Exception:
+            pass        
+        try:
+            self.main.destroy() 
+        except Exception:
+            pass
+        try:
+            self.results_halfScreen.unbind("<ButtonPress-1>")
+        except Exception:
+            pass        
+        try:
+            self.results_fullScreen.unbind("<ButtonPress-1>")
+        except Exception:
+            pass
+        self.show_more_button.destroy()
+        self.results_halfScreen.delete("arrow")
+        self.results_fullScreen.delete("arrow")
+        self.results_halfScreen.create_text((btn_width/2, btn_height/2), angle = "0", anchor = "center", text = up, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")        
+        self.results_fullScreen.create_text((btn_width/2, btn_height/2), angle = "0", anchor = "center", text = doubleup, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")
+        self.resultsLabel.config(text = "No Results")
+        self.resultsCanvas.place(x = 10, y = self.mainCanvas.winfo_reqheight() - canvas_height - 4, width = self.mainCanvas.winfo_reqwidth() - 20, height = canvas_height,)
+        self.left_click = False
+        print("------------------------------------------------------------------------------------------")
+    
+    """
+    def termsAndConditions(self):
+        self.mainCanvas.create_text(50, 130, text = "->", activefill = "red", tags = "terms")
+               
+        self.termsAndConditionsBox = Text(self.mainCanvas, width = 32, height = 19, font = ("calibri", 12), relief = "flat", )
+        self.termsAndConditionsBox.place(x = int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2), y = int(self.mainCanvas.winfo_reqheight() / 2) - int(self.termsAndConditionsBox.winfo_reqheight()) + 150)
+        self.termsAndConditionsBox.insert(INSERT, "\n\n")
+        self.termsAndConditionsBox.insert(INSERT, self.getText())
+        
+        self.headerLabel = Label(self.mainCanvas, text = "TERMS AND CONDITIONS", font = ("calibri", 14, 'underline'), bg = "#ffffff")
+        self.headerLabel.place(x = int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2), y = 132, width = self.termsAndConditionsBox.winfo_reqwidth(), height = 30)
+        
+        self.mainCanvas.create_rectangle(
+            int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2) - 2, 
+            int(self.mainCanvas.winfo_reqheight() / 2) - int(self.termsAndConditionsBox.winfo_reqheight()) - int(self.headerLabel.winfo_reqheight()) + 158, 
+            int(self.mainCanvas.winfo_reqwidth() / 2) + int(self.termsAndConditionsBox.winfo_reqwidth() / 2) + 2, 
+            int(self.mainCanvas.winfo_reqheight() / 2) + int(self.termsAndConditionsBox.winfo_reqheight()) + int(self.headerLabel.winfo_reqheight()) - 243, 
+        outline = "black", width = 2, tags = "terms")
+        
+        self.check_variable = BooleanVar()
+        self.agree_disagree = Checkbutton(self.mainCanvas, text = "   I accept these Terms and Conditions  ", onvalue = 1, offvalue = 0, font = ('bold', 10), bg = "#ffffff", variable = self.check_variable, command = self.toggle_button_state, )
+        self.agree_disagree.place(x = int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2), y = int(self.mainCanvas.winfo_reqheight() / 2) + int(self.termsAndConditionsBox.winfo_reqheight()) + int(self.headerLabel.winfo_reqheight()) - 242,)        
+        
+        self.mainCanvas.create_rectangle(
+            int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2) - 2,
+            int(self.mainCanvas.winfo_reqheight() / 2) + int(self.termsAndConditionsBox.winfo_reqheight()) + int(self.headerLabel.winfo_reqheight()) - 244, 
+            int(self.mainCanvas.winfo_reqwidth() / 2) + int(self.termsAndConditionsBox.winfo_reqwidth() / 2) + 2, 
+            int(self.mainCanvas.winfo_reqheight() / 2) + int(self.termsAndConditionsBox.winfo_reqheight()) + int(self.headerLabel.winfo_reqheight()) - 214, 
+        outline = "black", width = 2, tags = "terms")
+        
+        self.acceptTermsAndConditionButton = Button(self.mainCanvas, text = "continue", font = ('bold', 12), relief = "flat", state = "disabled", command = self.termsAndContidionsAgreed)
+        self.acceptTermsAndConditionButton.place(x = int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.termsAndConditionsBox.winfo_reqwidth() / 2) - 2, y = int(self.mainCanvas.winfo_reqheight() / 2) + int(self.termsAndConditionsBox.winfo_reqheight()) + int(self.headerLabel.winfo_reqheight()) - 213, width = int(self.termsAndConditionsBox.winfo_reqwidth() + 4))
+
+    def termsAndContidionsAgreed(self):
+        self.termsAgreed = True
+        self.mainCanvas.delete("terms")
+        self.mainCanvas.delete("blur")
+        self.agree_disagree.destroy()
+        self.headerLabel.destroy()
+        self.termsAndConditionsBox.destroy()
+        self.acceptTermsAndConditionButton.destroy()
+        
+    def getText(self):
+        text = lorem.words(15) + "\n\n" + lorem.paragraph()
+        cap = 0
+        while cap <= 12:
+            text = f"{text}\n\n{cap+1})     {lorem.paragraph()}"
+            cap += 1
+        return text + "\n\nNB:     " + lorem.words(15)
+    
+    def toggle_button_state(self):
+        if self.check_variable.get():
+            self.acceptTermsAndConditionButton.config(state = "normal")
+        else:
+            self.acceptTermsAndConditionButton.config(state = "disabled")
+
+    """    
+        
+
+
+#OLD PROGRAM STUFF
 
     #this function is called when 'userLabelButton' is initially clicked
     def noUserButtonClick(self):
@@ -552,11 +1346,11 @@ class FindMeParkingApp(Tk):
             except Exception:
                 pass
             try:
-                self.frame.unbind("<Configure>")#, self.onFrameConfigure)
+                self.frame.unbind("<Configure>")
             except Exception:
                 pass
             try:
-                self.canvas.unbind_all("<MouseWheel>")#, self._on_mousewheel)
+                self.canvas.unbind_all("<MouseWheel>")
             except Exception:
                 pass
             #creates a rectange image to blur out the background
@@ -670,7 +1464,7 @@ class FindMeParkingApp(Tk):
         
     def checkWhichScreenIWasOn(self): #393
         try:
-            self.getReadingButton.config(state = "normal", command = lambda: self.getLotsLoading())
+            self.getReadingButton.config(state = "normal", command = lambda: self.appMap())
         except Exception:
             pass
         try:
@@ -712,7 +1506,7 @@ class FindMeParkingApp(Tk):
     #'userAccountCanvas' is also destroyed, and also the rectange image with the blur 
     def close_resetAll(self):
         try:
-            self.getReadingButton.config(state = "normal", command = lambda: self.getLotsLoading())
+            self.getReadingButton.config(state = "normal", command = lambda: self.appMap())
         except Exception:
             pass
         try:
@@ -1243,7 +2037,7 @@ class FindMeParkingApp(Tk):
         image = image.resize((50,50), Image.Resampling.LANCZOS)
         self.userLabel_image = ImageTk.PhotoImage(image)
         
-        self.getReadingButton.config(state = "normal", command = lambda: self.getLotsLoading())
+        self.getReadingButton.config(state = "normal", command = lambda: self.appMap())
         self.userLabelButton.config(state = "normal", command = lambda : self.UserSettings(), image = self.userLabel_image)
         self.createUser = True        
         self.userAccountCanvas.destroy()        
@@ -1262,7 +2056,9 @@ class FindMeParkingApp(Tk):
         
         #Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "previous bookings", fg = "gray16", activebackground="medium spring green", activeforeground="gray16",).place(x = 5, y = 45, height = 30, width = 120)
         
-        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "user profile", fg = "gray16", activebackground="medium spring green", activeforeground="gray16", command = lambda : self.viewProfile()).place(x = 5, y = 45, height = 30, width = 120)
+        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "user profile", fg = "gray16", activebackground="medium spring green", activeforeground="gray16", command = lambda : self.viewProfile()).place(x = 5, y = 25, height = 30, width = 120)
+        
+        Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "check balance", fg = "gray16", activebackground="medium spring green", activeforeground="gray16", ).place(x = 5, y = 50, height = 30, width = 120)
         
         Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "log out", fg = "gray16", activebackground="medium spring green", activeforeground="gray16", command = lambda : self.logoutUser()).place(x = 5, y = 75, height = 30, width = 120)
     
@@ -1327,7 +2123,7 @@ class FindMeParkingApp(Tk):
         pic_lbl = Label(self.mainCanvas, image=self.userLabel_image, bd = 0)
         pic_lbl.place(x = self.mainCanvas.winfo_reqwidth() - pic_lbl.winfo_reqwidth() - 4, y = 4,)
         
-        btn = Button(self.mainCanvas, text = "exit", font = ('bold',15), bg = self.from_rgb((214,255,214)), relief = "groove", command = lambda: self.saveUserProfile(),)
+        btn = Button(self.mainCanvas, text = "exit", font = ('bold',15), bg = self.from_rgb((214,255,214)), relief = "flat", activebackground = self.from_rgb((214,255,214)), command = lambda: self.saveUserProfile(),)
         btn.place(x = self.mainCanvas.winfo_reqwidth() - pic_lbl.winfo_reqwidth() - 4, y = 64,)
         
         self.mainCanvas.create_text(int(self.mainCanvas.winfo_reqwidth() / 2), 80, text = "User Profile", font = ('bold',30), fill = "black", anchor = "center", tags = "user-profile")
@@ -1921,7 +2717,7 @@ class FindMeParkingApp(Tk):
     #this function returns a button object with specific parameters
     #this button will have a command to set the referred parking lot
     def setButton(self, c, choice, lot, i):
-        return Button(c, text="Reserve", font = ('bold',20), command = lambda : self.setParkingLot(lot, i), width = 10, height = 2, highlightthickness = 0, relief = "flat", borderwidth = 0, bg = choice, fg = "black")
+        return Button(c, text="Reserve", font = ('bold',20), command = lambda : self. setParkingLot(lot, i), width = 10, height = 2, highlightthickness = 0, relief = "flat", borderwidth = 0, bg = choice, fg = "black")
 
     #this function sets the activeLot variable to the selected parking lot object
     def setParkingLot(self, lot, i):
@@ -1938,7 +2734,8 @@ class FindMeParkingApp(Tk):
         
         self.has_activeLot = True
         self.checker()
-
+        
+    """
     #this function configues the 'canvas' canvas
     def onFrameConfigure(self, event):
         '''Reset the scroll region to encompass the inner frame'''
@@ -1954,6 +2751,7 @@ class FindMeParkingApp(Tk):
             self.mailBoxCanvas.yview_scroll(int(-1*(event.delta/120)), "units")
         except Exception:
             pass
+    """
 
     #this method selects a parking spot for the user
     def showGivenSpot(self):
@@ -2014,9 +2812,9 @@ class FindMeParkingApp(Tk):
         else:
             self.homeScreen_bool = False
         if screenNum == 2:
-            self.appLoadingScreen_bool = True
+            self.apLoadingScreen_bool = True
         else:
-            self.appLoadingScreen_bool = False
+            self.apLoadingScreen_bool = False
         if screenNum == 3:
             self.appMainScreen_bool = True
         else:
@@ -2299,5 +3097,39 @@ class Mail:
         self.header = header
         self.time = time
         self.type = type
+
+class Browser:
+    def __init__(self,parent,url):
+        self.webview_window = None
+        self.parent = parent
+        self.open_webview(url)
+        
+    def load_url(self, url):
+        # change url:
+        self.webview_window.load_url(url)
+        
+    # Function to create the webview window
+    def create_webview_window(self):
+        if self.webview_window is None:
+            width, height = 400, 750
+            self.webview_window = web.create_window(title='FMP Directions', width=width, height=height, x=300, y=0, on_top=True, resizable=False, min_size=(width,height),)
+            
+    # Function to open webview on the main thread
+    def open_webview(self, url):
+        if self.webview_window is None:
+            self.create_webview_window()
+            web.start(gui='tkinter', debug=False, func=lambda:self.load_url(url))
+            
+    # Function to close the webview window
+    def close_webview(self, url):
+        if self.webview_window is not None:
+            try:
+                web.destroy_window()
+            except Exception:
+                pass
+        self.webview_window = None
+        self.parent.deiconify()
+
+
 
 FindMeParkingApp()
