@@ -6,16 +6,12 @@ import time
 
 root = Tk()
 
-
-
-
 def checkPress(pressed):    
     if not pressed:
         pressed = True
         th.Thread(target=fivesec, args=(pressed,)).start()
 
-def fivesec(pressed):
-    
+def fivesec(pressed):    
     lbl.config(text="will change in 5 sec")    
     time.sleep(5)
     lbl.config(text="5 seconds are up")

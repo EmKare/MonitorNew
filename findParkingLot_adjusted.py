@@ -36,7 +36,7 @@ car_pos = (18.012265695689663, -76.79800557291115) #hwt       || squares: 26  | 
 map_widget.set_position(car_pos[0], car_pos[1], marker = False)
 #map_widget.set_marker(car_pos[0], car_pos[1], text = "car")
 #map_widget.set_position(39.0437, -77.4875, marker = True)
-
+print("min_zoom: ",map_widget.min_zoom)
 available_lots = {}
 more_available_lots = {}
 COUNT = 1
@@ -160,27 +160,27 @@ def populate_scroll():
         c.create_text(int(c.winfo_reqwidth()/5), 90, text = "Public Parking", font = ('bold', 12), justify = "center", anchor = "n", tags = 'text') 
         c.create_text(int(c.winfo_reqwidth()/4), 115, text = "Open. Closes 6PM ", font = ('bold', 12), justify = "center", anchor = "n", fill= "green", tags = 'text')
         #292 , 144
-        b1 = set_A_Button(c, name, data_list[1])
+        parkingLot = ParkingLotInfo(f"ParkingLot{data_list[1]}", rel_path)
+        
+        b1 = set_A_Button(c, name, parkingLot)
         b1.place(x = c.winfo_reqwidth() - 100, y = c.winfo_reqheight() - 85, width = 80, height = 30)
         
         b2 = set_B_Button(c, name, data_list[3])
         b2.place(x = c.winfo_reqwidth() - 100, y = c.winfo_reqheight() - 45, width = 80, height = 30)
         
-def set_A_Button(c, name:str, lottype:int):
-    return Button(c, text="Select", font = ('bold', 15), highlightthickness = 0, relief = "flat", borderwidth = 0, fg = "black", command = lambda : getParkingLot(name, lottype))
+def set_A_Button(c, name:str, parkingLot:ParkingLotInfo):
+    return Button(c, text="Select", font = ('bold', 15), highlightthickness = 0, relief = "flat", borderwidth = 0, fg = "black", command = lambda : getParkingLot(name, parkingLot))
 
-def getParkingLot(name:str, lottype:int):
-    global has_Lot
-    if not has_Lot:
-        has_Lot = True
-        print(f"{name}")
-        global parkingLot
-        parkingLot = ParkingLotInfo(f"ParkingLot{lottype}", rel_path)
-        
+def getParkingLot(name:str, parkingLot:ParkingLotInfo):
+    #global has_Lot
+    #if not has_Lot:
+    #    has_Lot = True
+        print(f"{name}")        
         print(f"ParkingLot_availableSpots:  {parkingLot.ParkingLot_availableSpots}")
         print(f"ParkingLot_amountAvailable: {parkingLot.ParkingLot_amountAvailable}")
         print(f"ParkingLot_number:          {parkingLot.ParkingLot_number}")
         print(f"ParkingLot_sides:           {parkingLot.ParkingLot_sides}")
+        print("------------------------------------------------------------------------------------------\n")
 
 def set_B_Button(c, name:str, route_coordinates:list):
     return Button(c, text="Route", font = ('bold',15), command = lambda : drawSpecificRoute(name, route_coordinates), highlightthickness = 0, relief = "flat", borderwidth = 0, fg = "black")

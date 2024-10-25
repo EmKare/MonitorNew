@@ -24,7 +24,7 @@ class ParkingLotInfo:
         self.getSides() #gets parking lot's rows and lot numbers
         self.getSpots() #gets all spots in parking lot
         self.getAvailableSpots() #gets all available spots in parking lot
-        self.getImage() #gets logo image for parking lot
+        #self.getImage() #gets logo image for parking lot
     
     def getType(self):
         with open(self.type) as f: #this file only has 1 number in it

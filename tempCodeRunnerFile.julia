@@ -1,71 +1,24 @@
-import tkinter as tk
-from tkinter.filedialog import askopenfilename, asksaveasfilename
-from tkinter import messagebox
-import os
-from tkhtmlview import HTMLLabel
+from tkinter import Tk, Button, Canvas, Label
+width = int((324 / 5 ) * 6)
+height = int((248 / 2) * 6)
 
-window = tk.Tk()
-window.title("HTML Editor")
-window.configure(bg="grey")
-window.state("zoomed")
-title = tk.Label(window, text="HTML Editor", font=("Arial Rounded MT Bold", 40, "underline"), bg="grey")
-title.place(x=400, y=20)
+root = Tk()
+root.geometry("500x500")
+root.title("Find FMP Parking Lots")
+root.resizable(False,False)
 
+name = "Intersection of Maxfield Avenue \n& Hagley Park Road"
 
-def run_code():
-    window_title = window.title()
-    index = window_title.index("-") + 2
-    window_title = window_title[index::]
+userAccountCanvas = Canvas(root, bg = "gray79", width = 324, height = 324)
+userAccountCanvas.place(x = 20,)
+        
+lbl = Label(master = userAccountCanvas, text = f"You've selected:\n{name}", font = ('bold',20), bg = "gray79")
+lbl.place(x = int(userAccountCanvas.winfo_reqwidth() / 2) - int(lbl.winfo_reqwidth() / 2), y = 20)
 
-    with open(window_title, "w") as path:
-        content = text_box.get("1.0", tk.END)
-        path.write(content)
-
-    basename = os.path.basename(window_title)
-    new_file = open(basename, "w")
-    new_file.write(content)
-    new_file.close()
-    window2 = tk.Toplevel(window)
-    window.configure(bg="white")
-    window2.title("Console")
-    window2.state("zoomed")
-    my_label = HTMLLabel(window2, html=content)
-    my_label.place(x=0, y=10)
+btn1 = Button(userAccountCanvas, text = "PROCEED", font = ('bold', 15), relief = "groove", )
+btn1.place(x = 25, y = 180, width= int(userAccountCanvas.winfo_reqwidth() / 2) - 20)
+btn2 = Button(userAccountCanvas, text = "BACK", font = ('bold', 15), relief = "groove", )
+btn2.place(x = 165, y = 180, width= int(userAccountCanvas.winfo_reqwidth() / 2) - 20)
 
 
-def get_stringvar(event):
-    line = text_box.get("insert linestart", "insert")
-    if (line[-1] == ">") and ("<" in line):
-        new_line = "</" + line[line.rindex("<") + 1:-1] + ">"
-        text_box.insert("insert", new_line)
-        text_box.mark_set("insert", f"insert-{len(new_line)}c")
-        return "break"
-
-
-def file_func():
-    frame.pack(side="left", fill="y")
-    text_box.pack(side="left", fill="both", expand=True)
-    scroll_bar.pack(side="left", fill="y")
-    run_b.pack(padx=50, pady=(100, 5), anchor="n")
-
-
-create = tk.Button(window, text="Create a new file", width=17, height=3, font=("Arial Rounded MT Bold", 20),
-                   command=save_file)
-create.place(x=420, y=200)
-open_e = tk.Button(window, text="Open an existing file", width=17, height=3, font=("Arial Rounded MT Bold", 20),
-                   command=open_file)
-open_e.place(x=420, y=350)
-
-window.protocol("WM_DELETE_WINDOW", on_closing)
-frame = tk.Frame(window, bd=2, relief="raised")
-
-text_box = tk.Text(window, font=("Flux-Regular", 12), fg="black")
-text_box.bind("<Tab>", get_stringvar)
-
-scroll_bar = tk.Scrollbar(window, command=text_box.yview)
-
-run_b = tk.Button(frame, text="Run", width=6, height=2, bg="white", command=run_code)
-
-text_box.configure(yscrollcommand=scroll_bar.set)
-
-window.mainloop()
+root.mainloop()
