@@ -1,4 +1,10 @@
-Intersection of Maxfield Avenue & Hagley Park Road#2#B3#2024-10-25 22:03:26#200#1
+Intersection of Maxfield Avenue & Hagley Park Road#2#B3#2024-10-25 22:03:26#200#0
 York Plaza#1#D8#2024-10-26 02:31:48#100#1
-The Springs#2#D8#2024-10-26 02:32:36#200#1
+The Springs#2#D8#2024-10-26 02:32:36#200#0
 Winchester Business Center#1#A7#2024-10-26 02:36:26#100#1
+Half Way Tree Mall#2#B3#2024-10-26 13:44:32#200#0
+Tropical Plaza#2#A6#2024-10-26 13:48:15#200#1
+NMIA Parking Lot C#2#NONE#2024-10-26 14:01:05#200#0
+Parking along Marcus Garvey Drive - A#2#A7#2024-10-26 21:20:18#200#1
+UDC Parking Lot#2#B3#2024-10-26 22:10:57#200#1
+Winchester Business Center#1#E1#2024-10-26 22:15:29#100#1

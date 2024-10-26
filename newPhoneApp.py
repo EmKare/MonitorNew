@@ -219,10 +219,84 @@ class FindMeParkingApp(Tk):
                     self.start()
             #if the event occured on or around the mailbox logo
             elif 23 < event.x < 130  and 24 < event.y < 130: #23, 24, 130, 130,
-                self.unbindEvent = 1 
-                self.mainCanvas.delete("homeScreen")
-                #self.view_previousbookings()
-                self.mail()
+                if self.userExists:
+                    self.unbindEvent = 1 
+                    self.mainCanvas.delete("homeScreen")
+                    #self.view_previousbookings()
+                    self.mail()                
+            elif 238 < event.x < 348  and 150 < event.y < 263:
+                if self.userExists:
+                    self.topup_bankBalance()
+                
+    def topup_bankBalance(self):
+        self.mainCanvas.unbind("<ButtonPress-1>")
+        self.create_rectangle(self.mainCanvas,3, 3, self.mainCanvas.winfo_reqwidth() - 3, self.mainCanvas.winfo_reqheight() - 3, fill='RoyalBlue1', alpha=.8, tags = "blur")
+        self.mini_mainCanvas()
+        
+        Button(self.userAccountCanvas, text = "close", font = ('bold',13,'underline'), bg = "gray79", activebackground  = "gray79", relief = "flat", highlightthickness = 0, border = 0, command = self.close_topup ).place(x = self.userAccountCanvas.winfo_reqwidth() - 65, y = 10, width = 50, height = 30)
+        
+        self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2),70, text = "[BIG BANK]", fill = "blue", font = ('bold',40), tags = "topup")
+        self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2),120, text = "topup balance", font = ('bold',18,'underline'), tags = "topup")
+        
+        self.topup_error = Label(self.userAccountCanvas, text = "Topup Error", font = ('bold',12), bg = "red2", fg = "white")        
+        
+        Label(self.userAccountCanvas, text = "current balance: ", font = ('bold',15), bg = "gray79").place(x = 20, y = 180)
+        Label(self.userAccountCanvas, text = f"${self.bankBalance:.2f}", font = ('bold',15), fg = "green", bg = "gray79").place(x = 210, y = 180)
+        Label(self.userAccountCanvas, text = "topup amount:", font = ('bold',15), bg = "gray79").place(x = 37, y = 220)
+        
+        contain = Frame(self.userAccountCanvas, width = 20 + 140 + 20 + 10, height = 30, bg = "gray79")
+        contain.place(x = 210, y = 220)
+        
+        Label(contain, text = "$", font = ('bold',15), bg = "gray79").place(x = 0, y = 0, width = 20, height = 30)
+        
+        self.amnt_entry = Entry(contain, bd = 0, bg = "#ffffff", font = ('bold',15), relief = "flat", highlightthickness = 0, border = 0, fg = "gray18")
+        self.amnt_entry.place(x = 20, y = 0, width = 140)
+        
+        Button(contain, text = "x", bg = "linen", fg = "red", activebackground="linen", activeforeground="red", relief = "flat", highlightthickness = 0, border = 0, command = lambda: self.clearEntry(self.amnt_entry)).place(x = 20 + 140, y = 0, width = 20, height = 30)
+        
+        btn = Button(self.userAccountCanvas, text = "update", font = ('bold',20), bg = "RoyalBlue1", relief="flat", fg = "white", activebackground = "gray79", activeforeground = "red", highlightthickness = 0, border = 0, command = self.validate_topup)
+        btn.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(btn.winfo_reqwidth() / 2), y = self.userAccountCanvas.winfo_reqheight() - 50, height = 40)
+        self.amnt_entry.bind("<FocusIn>", self.reset_Label)        
+        
+    def reset_Label(self, event):
+        try: self.topup_error.place_forget()
+        except Exception: pass
+        
+    def validate_topup(self):
+        self.topup_error.focus_set()
+        if len(self.amnt_entry.get()) != 0:
+            regex = r'^\s*(?=.*[1-9])\d*(?:\.\d{1,2})?\s*$'
+            if(re.fullmatch(regex,self.amnt_entry.get())):
+                self.bankBalance += float(self.amnt_entry.get())
+                self.userAccountCanvas.after(2000)
+                
+                mail = Bank_Topup(datetime.now(), self.fname, self.email, float(self.amnt_entry.get()), self.bankBalance, True)
+                self.inbox.append(mail)
+                
+                for widget in self.userAccountCanvas.winfo_children():
+                    widget.destroy()
+                    
+                self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2),170, text = "Topup Successful. Your New balance is", font = ('bold',12,), fill = "green", tags = "topup")
+                
+                self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2),230, text = f"${self.bankBalance:.2f}", font = ('bold',30,), fill = "green", tags = "topup")
+                
+                self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2),290, text = "Closing...", font = ('bold',10,), fill = "grey", tags = "topup")
+                
+                self.userAccountCanvas.after(2500, lambda: self.close_topup(True))
+            else:
+                self.topup_error.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.topup_error.winfo_reqwidth() / 2), y = 145)
+        else:
+            self.topup_error.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.topup_error.winfo_reqwidth() / 2), y = 145)
+    
+    def showClick(self, event):
+        print(event.x, event.y)
+        
+    def close_topup(self, delete:bool = False):
+        if delete:
+            self.mainCanvas.delete("topup")
+        self.userAccountCanvas.destroy()
+        self.mainCanvas.delete("blur")
+        self.mainCanvas.bind("<ButtonPress-1>", self.checkClick)
                 
     def checkTerms(self):
         try:
@@ -667,7 +741,7 @@ class FindMeParkingApp(Tk):
         self.getReadingButton = Button(self.mainCanvas, bg = "forest green", fg = "white", highlightthickness=0, relief="flat", borderwidth=0, text = "Find Close-By", font = ('bold', 20), activebackground = "lightgreen", activeforeground = "white", command = self.appMap,) #command = lambda: self.getLotsLoading(),)
         self.getReadingButton.config(width = 15, height = 2) #freeUseButton
         self.getReadingButton.place(x = int((self.width) / 2) - int(self.getReadingButton.winfo_reqwidth() / 2), y = int((self.height - 100) / 2) - 60)
-        self.createSecondMainButton()
+        #self.createSecondMainButton()
         self.mainCanvas.bind("<Double-Button-1>", self.backtoHome)
         
     def createSecondMainButton(self):
@@ -727,8 +801,8 @@ class FindMeParkingApp(Tk):
         self.map_widget = TkinterMapView(self.map_container, width = self.mainCanvas.winfo_reqwidth() - 8, height = self.mainCanvas.winfo_reqheight() - 8,corner_radius = 2)
         self.map_widget.place(x = 4, y = 4)
         self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom = 22,)
-        #coordinates_tuple = choice(files.locations)
-        coordinates_tuple = (18.012265695689663, -76.79800557291115)#
+        coordinates_tuple = choice(files.locations)
+        #coordinates_tuple = (18.012265695689663, -76.79800557291115)#
         self.map_widget.set_position(coordinates_tuple[0], coordinates_tuple[1], marker = False,)
         
         self.map_widget.set_zoom(16)
@@ -758,7 +832,7 @@ class FindMeParkingApp(Tk):
         #down = "\u21E9"
         
         if not self.right_click:
-            self.map_widget.add_right_click_menu_command(label = "Restart", pass_coords = False, command = lambda: self.right_click_event(btn_width, btn_height, up, doubleup), )
+            self.map_widget.add_right_click_menu_command(label = "Restart", pass_coords = False, command = lambda: self.right_click_event(btn_width, btn_height, up, doubleup,car_pos,))
             self.right_click = True
         
         while len(self.available_lots) != FIRST_LIMIT :
@@ -857,7 +931,7 @@ class FindMeParkingApp(Tk):
         self.findLocation = Entry(self.searchFrame, bd = 0, bg = search_colour, font = ('bold',15), relief = "flat", highlightthickness = 0, border = 0, fg = "gray18")
         self.findLocation.place(x = 10, y = 1, width = self.entry_width, height = 30)
         
-        self.clearButton = Button(self.searchFrame, text = "x", relief = "flat", bg = search_colour, activebackground = "#ffffff", bd = 0, highlightthickness = 0, border = 0, activeforeground = "red", command = lambda : self.clearEntry(),)
+        self.clearButton = Button(self.searchFrame, text = "x", relief = "flat", bg = search_colour, activebackground = "#ffffff", bd = 0, highlightthickness = 0, border = 0, activeforeground = "red", command = lambda : self.clearEntry(self.findLocation),)
         self.clearButton.place(x = self.entry_width + 10 , y = 1, width = 20, height = 30)
         
         self.searchButton = Button(self.searchFrame, text = "find", relief = "flat", bg = "lightgray", fg = "green", activebackground = "lightgray", activeforeground = "green", bd= 0, highlightthickness = 0, border = 0, command = lambda : self.searchMap())
@@ -868,25 +942,25 @@ class FindMeParkingApp(Tk):
         
         self.resultsCanvas.create_rectangle(0,0,self.mainCanvas.winfo_reqwidth()-21,canvas_height+1, width = 1, tags = "results-rect")
         
-        self.resultsLabel = Label(self.resultsCanvas, text = f"Results:  {len(self.available_lots)}", font = ("calibri", 18, 'bold'), bg = search_colour)
-        self.resultsLabel.place(x = 10, y = 7)        
-        
+        self.resultsLabel = Label(self.resultsCanvas, font = ("calibri", 18, 'bold'), bg = search_colour)
+        self.resultsLabel.place(x = 10, y = 7)
+    
         self.results_halfScreen = Canvas(self.resultsCanvas, relief = "flat", bg = search_colour, borderwidth = 0, bd = 0, highlightthickness = 0, border = 0,)
         self.results_halfScreen.create_text((btn_width/2, btn_height/2), angle = "0", anchor = "center", text = up, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")
         self.mini_panel, self.midi_panel, self.maxi_panel = True, False, False
         #self.checkPanelSize()
         
         self.results_halfScreen.bind("<ButtonPress-1>", 
-                                     lambda event, 
-                                     a = car_pos, 
-                                     b = btn_width, 
-                                     c = btn_height, 
-                                     d = up,
-                                     e = doubleup,
-                                     #f = results_canvas_mini_height,
-                                     #g = results_canvas_full_height
-                                     : 
-                                     self.midimize_resultsCanvas(event, a, b, c, d, e, ))
+                                    lambda event, 
+                                    a = car_pos, 
+                                    b = btn_width, 
+                                    c = btn_height, 
+                                    d = up,
+                                    e = doubleup,
+                                    #f = results_canvas_mini_height,
+                                    #g = results_canvas_full_height
+                                    : 
+                                    self.midimize_resultsCanvas(event, a, b, c, d, e, ))
         
         self.results_halfScreen.bind("<ButtonRelease-1>", lambda ev: ev.widget.configure(relief = "flat"))
         self.results_halfScreen.place(x = int(self.resultsCanvas.winfo_reqwidth()/2)-btn_width, y = 15, width = btn_width, height = btn_height)     
@@ -894,32 +968,37 @@ class FindMeParkingApp(Tk):
         self.results_fullScreen = Canvas(self.resultsCanvas, relief = "flat", bg = search_colour, borderwidth = 0, bd = 0, highlightthickness = 0, )
         self.results_fullScreen.create_text((btn_width/2, btn_height/2), angle = "0", anchor = "center", text = doubleup, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")
         self.results_fullScreen.bind("<ButtonPress-1>", lambda event, 
-                                     a = car_pos, 
-                                     b = btn_width, 
-                                     c = btn_height, 
-                                     d = up,
-                                     e = doubleup,
-                                     #f = results_canvas_mini_height,
-                                     #g = results_canvas_mid_height
-                                     : 
-                                     self.maximize_resultsCanvas(event, a, b, c, d, e,))
+                                    a = car_pos, 
+                                    b = btn_width, 
+                                    c = btn_height, 
+                                    d = up,
+                                    e = doubleup,
+                                    #f = results_canvas_mini_height,
+                                    #g = results_canvas_mid_height
+                                    : 
+                                    self.maximize_resultsCanvas(event, a, b, c, d, e,))
         self.results_fullScreen.bind("<ButtonRelease-1>", lambda ev: ev.widget.configure(relief = "flat"))
         self.results_fullScreen.place(x = int(self.resultsCanvas.winfo_reqwidth()/2), y = 15, width = btn_width, height = btn_height)
         
         self.resultsCanvas.create_line(int(self.resultsCanvas.winfo_reqwidth()/2)-btn_width,10,int(self.resultsCanvas.winfo_reqwidth()/2)+btn_width,10, width = 5, fill = "gray64")
-        
-        self.sideWidgetDataPanel = Canvas(self.resultsCanvas, bg = "lightblue", bd= 0, highlightthickness = 0, border = 0,)
-        #self.sideWidgetDataPanel.place(x = 2, y = 60, width = self.resultsCanvas.winfo_reqwidth() - 4, height = canvas_height - 60 )
-        
-        self.populate_scroll(car_pos, btn_width, btn_height, up, doubleup)
-        
-        if show_more:
-            ADDITIONAL = 5
-            self.show_more_button = Button(self.resultsCanvas, text = "Show More", bg = search_colour, font = ("calibri", 10, 'bold', 'underline'), highlightthickness = 0, relief = "flat", borderwidth = 0, fg = "black", command = lambda: self.show_more_lots(car_pos, ADDITIONAL,btn_width,btn_height,up,doubleup))
-            self.show_more_button.place(x = self.resultsCanvas.winfo_reqwidth() - 150, y = 13, width = 80, height = 30)
-        
-        self.closeResults = Button(self.resultsCanvas, text = "X", font = ("calibri", 10, 'normal',), relief = "flat", fg = "#ffffff", bg = "gray64", activeforeground = "black", activebackground = "gray64", bd = 0, highlightthickness = 0, border = 0, command = lambda: self.right_click_event(btn_width, btn_height, up, doubleup))
-        self.closeResults.place(x = self.resultsCanvas.winfo_reqwidth() - 40, y = 10, width = 20, height = 20)
+            
+        if len(self.available_lots) > 0:
+            
+            self.resultsLabel.config(text = f"Results:  {len(self.available_lots)}",)
+            self.sideWidgetDataPanel = Canvas(self.resultsCanvas, bg = "lightblue", bd= 0, highlightthickness = 0, border = 0,)
+            #self.sideWidgetDataPanel.place(x = 2, y = 60, width = self.resultsCanvas.winfo_reqwidth() - 4, height = canvas_height - 60 )
+            
+            self.populate_scroll(car_pos, btn_width, btn_height, up, doubleup)
+            
+            if show_more:
+                ADDITIONAL = 5
+                self.show_more_button = Button(self.resultsCanvas, text = "Show More", bg = search_colour, font = ("calibri", 10, 'bold', 'underline'), highlightthickness = 0, relief = "flat", borderwidth = 0, fg = "black", command = lambda: self.show_more_lots(car_pos, ADDITIONAL,btn_width,btn_height,up,doubleup))
+                self.show_more_button.place(x = self.resultsCanvas.winfo_reqwidth() - 150, y = 13, width = 80, height = 30)
+            
+            self.closeResults = Button(self.resultsCanvas, text = "X", font = ("calibri", 10, 'normal',), relief = "flat", fg = "#ffffff", bg = "gray64", activeforeground = "black", activebackground = "gray64", bd = 0, highlightthickness = 0, border = 0, command = lambda: self.right_click_event(btn_width, btn_height, up, doubleup, car_pos))
+            self.closeResults.place(x = self.resultsCanvas.winfo_reqwidth() - 40, y = 10, width = 20, height = 20)
+        else:
+            self.right_click_event(btn_width, btn_height, up, doubleup, car_pos)
         
     def checkPanelSize(self, car_pos:tuple, btn_width:int, btn_height:int, arrow1:str, arrow2:str,):
         if self.mini_panel:
@@ -1321,16 +1400,19 @@ class FindMeParkingApp(Tk):
         
         #creates a Booking object
         self.currentBooking = Booking(name)
-        self.currentBooking.set_amount(amount)
-        self.currentBooking.set_time(datetime.now())
+        self.currentBooking.set_amount(amount)        
         self.currentBooking.set_type(res_type)
         
         for widget in self.userAccountCanvas.winfo_children():
             widget.destroy()
         
         if balance_left >= 0:
+            self.currentBooking.set_time(datetime.now())
             self.bankBalance = balance_left            
-            self.currentBooking.set_outcome(True)            
+            self.currentBooking.set_outcome(True)
+            
+            mail = Bank_Statement(datetime.now(), self.fname, self.email, self.bankBalance,)
+            self.inbox.append(mail)         
                 
             header = Label(self.userAccountCanvas, text = "Make Payment", font = ("bold",23,"underline"), bg = "gray79", fg = "blue")
             header.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(header.winfo_reqwidth() / 2), y = 30)
@@ -1354,6 +1436,7 @@ class FindMeParkingApp(Tk):
             else: #self chosen
                 self.userAccountCanvas.after(2500, lambda: self.list_all_available_spots(url, name, parkingLot, distance,))
         else:
+            self.currentBooking.set_time(datetime.now())
             self.currentBooking.set_outcome(False)
             self.currentBooking.set_spot("NONE") 
             header = Label(self.userAccountCanvas, text = "Make Payment", font = ("bold",23,"underline"), bg = "gray79", fg = "blue")
@@ -1459,7 +1542,8 @@ class FindMeParkingApp(Tk):
     def cancel_transaction(self, parkingLot:ParkingLotInfo):
         self.mainCanvas.delete("shapes")
         self.mainCanvas.delete("group")        
-        self.document_booking()        
+        self.document_booking(self.currentBooking)
+        self.previousbookings_List.append(self.currentBooking)    
         
         try: del parkingLot
         except Exception: pass
@@ -1509,22 +1593,22 @@ class FindMeParkingApp(Tk):
         try: self.userAccountCanvas.destroy()
         except Exception: pass
 
-    def document_booking(self):
+    def document_booking(self, booking):
         f = open(f"{files.user_profile}previous_bookings.txt", "a")
-        lotname = self.currentBooking.get_lot_name().replace('\n', '')
+        
+        lotname = booking.get_lot_name().replace('\n', '')
         f.write(f"{lotname}#") #name
-        f.write(f"{self.currentBooking.get_type()}#") #type
-        f.write(f"{self.currentBooking.get_spot()}#") #spot
-        f.write(f'{self.currentBooking.get_time().strftime("%Y-%m-%d %H:%M:%S")}#') #time
-        f.write(f"{self.currentBooking.get_amount()}#") #amount
-        f.write(f"{int(self.currentBooking.get_outcome())}\n") #outcome
+        f.write(f"{booking.get_type()}#") #type
+        f.write(f"{booking.get_spot()}#") #spot
+        f.write(f'{booking.get_time().strftime("%Y-%m-%d %H:%M:%S")}#') #time
+        f.write(f"{booking.get_amount()}#") #amount
+        f.write(f"{int(booking.get_outcome())}\n") #outcome
         
         f.close()#name,type,spot,time,amount,outcome
         
     def get_previousbookings(self,):                        
         with open(f"{files.user_profile}previous_bookings.txt","r") as f: 
             for line in f:
-                print(line)
                 if len(line) > 0:
                     word = line.rstrip().split('#')
                     #name,type,spot,time,amount,outcome
@@ -1627,9 +1711,10 @@ class FindMeParkingApp(Tk):
             self.map_widget.set_position(car_pos[0] - 0.004, car_pos[1], marker = False,)        
             self.map_widget.set_zoom(16)
 
-    def clearEntry(self):
-        #self.hasRoute = False
-        self.findLocation.delete(0, END)
+    def clearEntry(self, entry:Entry):
+        try: self.topup_error.place_forget()
+        except Exception: pass
+        entry.delete(0, END)
         
     def clearCanvasToLayMap(self):
         self.mainCanvas.delete("shapes")
@@ -1638,6 +1723,7 @@ class FindMeParkingApp(Tk):
         
     def left_click_event(self, coordinates_tuple: tuple):
         if not self.left_click:
+            self.clearMapMarkings()
             self.COLOUR = 0
             self.left_click = True
             start = time()
@@ -1649,7 +1735,7 @@ class FindMeParkingApp(Tk):
             print(f"total available FMP lots found: {len(self.available_lots) + len(self.more_available_lots)}")
             print("------------------------------------------------------------------------------------------")
 
-    def right_click_event(self, btn_width:int, btn_height:int, up:str, doubleup:str):
+    def right_click_event(self, btn_width:int, btn_height:int, up:str, doubleup:str, car_pos:tuple,):
         canvas_height = self.results_canvas_mini_height
         self.clearMapMarkings()
         try:
@@ -1670,6 +1756,7 @@ class FindMeParkingApp(Tk):
             pass
         try: self.show_more_button.destroy()
         except Exception: pass
+        self.map_widget.set_marker(car_pos[0], car_pos[1], text = "YOU", text_color = "blue")
         self.results_halfScreen.delete("arrow")
         self.results_fullScreen.delete("arrow")
         self.results_halfScreen.create_text((btn_width/2, btn_height/2), angle = "0", anchor = "center", text = up, font = ("calibri", 20, 'normal',), fill="SystemButtonText", tags = "arrow")        
@@ -1919,8 +2006,11 @@ class FindMeParkingApp(Tk):
                 if self.usernameEntry.get() == self.username:
                     #if the data in 'passwordEntry' is the same ss the user password
                     if self.passwordEntry.get() == self.password:
+                        print(f"username given- {self.usernameEntry.get()} : actual username- {self.username}")
+                        print(f"password given- {self.passwordEntry.get()} : actual password- {self.password}")
                         #Login is Successful
                         self.userExists = True
+                        self.login_confirm() 
                     else:
                         #if username entered != self.username
                         self.empty_Label.config(text = "'Password' invalid", fg = "old lace", bg = "red2")
@@ -1936,11 +2026,11 @@ class FindMeParkingApp(Tk):
         try:
             self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
         except Exception:
-            pass        
-        self.login_confirm() 
+            pass
 
     def login_confirm(self):
         self.mini_mainCanvas()
+        self.userAccountCanvas.after(1000,)
         
         self.userAccountCanvas.create_text(int(self.userAccountCanvas.winfo_reqwidth() / 2), 60, text = "Logging In", font = ('bold',30), tags = "text",)
         
@@ -2158,20 +2248,24 @@ class FindMeParkingApp(Tk):
                             self.RegistrationScreen2()
                         else:
                             #if the email address entered does not match with the regular expression criteria
-                            self.empty_Label.config(text = "'Email Address' not valid", fg = "old lace", bg = "red2")    
+                            self.empty_Label.config(text = "'Email Address' not valid", fg = "old lace", bg = "red2")
+                            self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
                     else:
                         #if the email entry is empty
                         self.empty_Label.config(text = "'Email Address' is blank", fg = "old lace", bg = "red2")
+                        self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
                 else:
                     #if the last name entry is empty
                     self.empty_Label.config(text = "'Last Name' is blank", fg = "old lace", bg = "red2")
+                    self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
             else:
                 #if the first name entry is empty
                 self.empty_Label.config(text = "'First Name' is blank", fg = "old lace", bg = "red2")
+                self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
         else:
             #if the gender combobox was not selected
             self.empty_Label.config(text = "'Gender' is blank", fg = "old lace", bg = "red2")
-        self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
+            self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
 
     #this function creates the 2nd of 3 registration screens above 'mainCanvas'. It does
     #so by creating some text, a few Entry, Button and Combobox elements, and also a Label
@@ -2207,7 +2301,7 @@ class FindMeParkingApp(Tk):
         global card
         if card != 0:
             self.cardEntry.insert(0, card)
-        self.cardEntry.place(x = 20, y = 290, width = 210, height = 40)
+        self.cardEntry.place(x = 20, y = 290, width = 230, height = 40)
         
         #self.cardType_Label = Label( self.userAccountCanvas, font = ('bold', 15) , bg = "red2" )
         #self.cardType_Label.place(x = 240, y = 290, width = 60, height = 40)
@@ -2380,27 +2474,37 @@ class FindMeParkingApp(Tk):
                                                     self.RegistrationScreen3()
                                                 else:
                                                     self.empty_Label.config(text = "'Driver's ID' not valid", fg = "old lace", bg = "red2")
+                                                    self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
                                             else:
                                                 self.empty_Label.config(text = "'Driver's ID' is blank", fg = "old lace", bg = "red2")
+                                                self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
                                         else:
-                                            self.empty_Label.config(text = "'Expiry Date' not valid", fg = "old lace", bg = "red2")                             
+                                            self.empty_Label.config(text = "'Expiry Date' not valid", fg = "old lace", bg = "red2")
+                                            self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
                                     else:
                                         self.empty_Label.config(text = "'Expiry Date' not complete", fg = "old lace", bg = "red2")
+                                        self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
                                 else:
                                     self.empty_Label.config(text = "'Expiry Date' not complete", fg = "old lace", bg = "red2")
+                                    self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
                             else:
                                 self.empty_Label.config(text = "'CVV' is not valid", fg = "old lace", bg = "red2")
+                                self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
                         else:
                             self.empty_Label.config(text = "'CVV' is blank", fg = "old lace", bg = "red2")
+                            self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
                     else:
                         self.empty_Label.config(text = "'Card Number' is not valid", fg = "old lace", bg = "red2")
+                        self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
                 else:
                     self.empty_Label.config(text = "'Card Number' is blank", fg = "old lace", bg = "red2")
+                    self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
             else:
                 self.empty_Label.config(text = "'Contact Number' is not valid", fg = "old lace", bg = "red2")
+                self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
         else:
             self.empty_Label.config(text = "'Contact Number' is blank", fg = "old lace", bg = "red2")
-        self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
+            self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
 
     #this function creates the 3rd of 3 registration screens above 'mainCanvas'. It does
     #so by creating some text, a few Entry, and Button elements, and also a Label
@@ -2463,14 +2567,16 @@ class FindMeParkingApp(Tk):
                     global username
                     username = self.username
                     self.saveAccountInfo()
+                    self.confirmRegistration()
                 else:
                     self.empty_Label.config(text = "'Password' too short", fg = "old lace", bg = "red2")
+                    self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15) 
             else:
                 self.empty_Label.config(text = "'Password' is blank", fg = "old lace", bg = "red2")
+                self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15) 
         else:
             self.empty_Label.config(text = "'Username' is blank", fg = "old lace", bg = "red2")
-        self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
-        self.confirmRegistration()     
+            self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)     
 
     #this function writes the 'User information' to a text file
     def saveAccountInfo(self):
@@ -2478,8 +2584,8 @@ class FindMeParkingApp(Tk):
         f.write(f"{self.username}\n")
         f.write(f"{self.password}\n")       
         f.write(f"{self.gender}\n")
-        f.write(f"{self.fname}\n")
-        f.write(f"{self.lname}\n")
+        f.write(f"{self.fname.capitalize()}\n")
+        f.write(f"{self.lname.capitalize()}\n")
         f.write(f"{self.email}\n")
         f.write(f"{self.phone}\n")
         f.write(f"{self.id}\n")
@@ -2550,10 +2656,19 @@ class FindMeParkingApp(Tk):
         Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "previous bookings", fg = "gray16", activebackground="medium spring green", activeforeground="gray16", command = self.view_previousbookings).place(x = 15, y = 80, height = 30, width = 120)
         
         Button(self.userPopupLabel, bg = "spring green", highlightthickness=0, relief="flat", borderwidth=0, font = ('bold',8), text = "log out", fg = "gray16", activebackground="medium spring green", activeforeground="gray16", command = lambda : self.logoutUser()).place(x = 15, y = 105, height = 30, width = 120)
-        
-    def view_previousbookings(self):
-        try: self.userLabelButton.config(state = "disabled", command = lambda : self.UserSettings(), )
-        except Exception: pass        
+    
+    def closeBookings(self):
+        try: self.previous_bookings_Canvas.destroy()
+        except Exception: pass
+        try: self.create_userLabelButton()
+        except Exception: pass
+        try: self.getReadingButton.config(state = "normal")
+        except Exception: pass
+        try: self.reserveSpotButton.config(state = "normal")
+        except Exception: pass
+        self.mainCanvas.delete("blur")
+    
+    def view_previousbookings(self):        
         try: self.getReadingButton.config(state = "disabled")
         except Exception: pass
         try: self.reserveSpotButton.config(state = "disabled")
@@ -2567,45 +2682,129 @@ class FindMeParkingApp(Tk):
         self.previous_bookings_Canvas = Canvas(self.mainCanvas, bg = "gray79", width = int((self.mainCanvas.winfo_reqwidth() / 6) * 5), height = int((self.mainCanvas.winfo_reqheight() / 6) * 4))
         self.previous_bookings_Canvas.place(x = int(self.mainCanvas.winfo_reqwidth() / 2) - int(self.previous_bookings_Canvas.winfo_reqwidth() / 2), y = int(self.mainCanvas.winfo_reqheight() / 2) - int(self.previous_bookings_Canvas.winfo_reqheight() / 2))
         
-        back_button = Button(self.previous_bookings_Canvas, bg = "gray79", text = "back", fg = "red", font = ('bold',12), highlightthickness=0, relief="flat", borderwidth=0, bd = 0)
+        back_button = Button(self.previous_bookings_Canvas, bg = "gray79", text = "back", fg = "red", font = ('bold',12), highlightthickness=0, relief="flat", borderwidth=0, bd = 0, command = self.closeBookings)
         back_button.place(y = 10, x = int(self.previous_bookings_Canvas.winfo_reqwidth()) - int(back_button.winfo_reqwidth()) - 10)
         
         header = Label(self.previous_bookings_Canvas, text = "Previous Bookings", font = ("bold",23,"underline"), bg = "gray79", fg = "blue")
         header.place(x = int(self.previous_bookings_Canvas.winfo_reqwidth() / 2) - int(header.winfo_reqwidth() / 2), y = 70)
-                
-        #self.previousbookings_List.clear()
         
-        if len(self.previousbookings_List) > 0:
-            previous_button = Button(self.previous_bookings_Canvas, text = "previous", font = ('normal',10), bg = "gray75", fg = "blue", highlightthickness=0, relief="flat", borderwidth=0, bd = 0, activeforeground="blue",)
-            previous_button.place(x = 15, y = 140, width = 100)
-            
-            next_button = Button(self.previous_bookings_Canvas, text = "next", font = ('normal',10), bg = "gray76", fg = "blue", highlightthickness=0, relief="flat", borderwidth=0, bd = 0, activeforeground="blue",)
-            next_button.place(x = self.previous_bookings_Canvas.winfo_reqwidth() - 115, y = 140, width = 100)
+        if len(self.previousbookings_List) == 0:
+            no_previousbookings_label = Label(self.previous_bookings_Canvas, text = "NO PREVIOUS BOOKINGS", font = ('bold',17), fg = "indian red", bg = "gray79")
+            no_previousbookings_label.place(x = int(self.previous_bookings_Canvas.winfo_reqwidth()/2) - int(no_previousbookings_label.winfo_reqwidth()/2),
+                                            y = int(self.previous_bookings_Canvas.winfo_reqheight()/2) - int(no_previousbookings_label.winfo_reqheight()/2))          
+        else:            
+            self.previous_button = Button(self.previous_bookings_Canvas, text = "previous", font = ('normal',10), bg = "gray75", fg = "blue", highlightthickness=0, relief="flat", borderwidth=0, bd = 0, activeforeground="blue",)
+            self.previous_button.place(x = 15, y = 140, width = 100)
+                
+            self.next_button = Button(self.previous_bookings_Canvas, text = "next", font = ('normal',10), bg = "gray76", fg = "blue", highlightthickness=0, relief="flat", borderwidth=0, bd = 0, activeforeground="blue", )
+            self.next_button.place(x = self.previous_bookings_Canvas.winfo_reqwidth() - 115, y = 140, width = 100)
             
             previous_bookings_frame = Canvas(self.previous_bookings_Canvas, bg = "gray77", width = self.previous_bookings_Canvas.winfo_reqwidth() - 20, height = int((self.previous_bookings_Canvas.winfo_reqheight() / 4) * 3 ) - 40)
             previous_bookings_frame.place(x = 8, y = 182)
-            
-            # creating a frame and assigning it to container
-            parent_container = Frame(previous_bookings_frame, height=previous_bookings_frame.winfo_reqheight(), width=previous_bookings_frame.winfo_reqwidth())
-            # specifying the region where the frame is packed in root
-            parent_container.pack(side="top", fill="both", expand=True)
-            # configuring the location of the container using grid
-            parent_container.grid_rowconfigure(0, weight=1)
-            parent_container.grid_columnconfigure(0, weight=1)            
-            # We will now create a dictionary of frames
-            self.booking_frames = {}
-            
-            # we'll create the frames themselves later but let's add the components to the dictionary.
-            for bookings in self.previousbookings_List:
-                theframe = bookings(parent=parent_container, controller=self)
-                # the windows class acts as the root window for the frames.
-                self.frames[bookings] = theframe
-                theframe.grid(row=0, column=0, sticky="nsew")
-            
+               
+            if len(self.previousbookings_List) == 1:
+                self.previous_button.config(state="disabled")
+                self.next_button.config(state="disabled")
+                
+
+                solo_frame = self.booking_Frame(previous_bookings_frame,
+                                                len(self.previousbookings_List), 
+                                                self.previousbookings_List[0].get_type_string().upper(), 
+                                                self.previousbookings_List[0].get_lot_name().upper(), 
+                                                self.previousbookings_List[0].get_spot().upper(), 
+                                                self.previousbookings_List[0].get_amount(), 
+                                                self.previousbookings_List[0].get_outcome(), 
+                                                self.previousbookings_List[0].get_outcome_string().upper(), 
+                                                self.previousbookings_List[0].get_time())
+                solo_frame.place(x = 0, y = 0)
+                
+            else:
+                
+                parent_container = Frame(previous_bookings_frame, height=previous_bookings_frame.winfo_reqheight(), width=previous_bookings_frame.winfo_reqwidth())
+
+                parent_container.pack(side="top", fill="both", expand=True)
+                parent_container.grid_rowconfigure(0, weight=1)
+                parent_container.grid_columnconfigure(0, weight=1)            
+                self.booking_frames = {}
+                
+                for index, bookings in enumerate(self.previousbookings_List):
+                    theframe = self.booking_Frame(parent_container,
+                                                index+1,
+                                                  bookings.get_type_string().upper(), 
+                                                  bookings.get_lot_name().upper(),
+                                                  bookings.get_spot().upper(), 
+                                                  bookings.get_amount(),
+                                                  bookings.get_outcome(),
+                                                  bookings.get_outcome_string().upper(),
+                                                  bookings.get_time())
+                    self.booking_frames[index] = theframe
+                    theframe.grid(row=0, column=0, sticky="nsew")
+                    
+                global here, there
+                here, there = 0, len(self.booking_frames) - 1
+                
+                self.previous_button.config(command=lambda:self.raise_frame(here-1,False))
+                self.next_button.config(command=lambda:self.raise_frame(here+1,True))
+                
+                self.booking_frames[0].tkraise()
+                self.check_btn(here, there)                
+                    
+    def raise_frame(self, number:int, check:bool):
+        global here, there
+        self.booking_frames[number].tkraise()
+        if check:
+            here +=1 
         else:
-            no_previousbookings_label = Label(self.previous_bookings_Canvas, text = "NO PREVIOUS BOOKINGS", font = ('bold',17), fg = "indian red", bg = "gray79")
-            no_previousbookings_label.place(x = int(self.previous_bookings_Canvas.winfo_reqwidth()/2) - int(no_previousbookings_label.winfo_reqwidth()/2),
-                                            y = int(self.previous_bookings_Canvas.winfo_reqheight()/2) - int(no_previousbookings_label.winfo_reqheight()/2))
+            here -= 1
+        self.check_btn(here, there)
+        
+    def check_btn(self, here:int, there:int):
+        if here == 0:
+            self.previous_button.config(state="disabled")
+        else:
+            self.previous_button.config(state="normal")
+        if here == there:
+            self.next_button.config(state="disabled")
+        else:
+            self.next_button.config(state="normal")
+
+    def booking_Frame(self, parent, length:int, type_string:str, lot_name:str, spot:str, amount:float, outcome:bool, outcome_string:str, date:datetime):
+        frame = Frame(parent, bg = "gray77", width = parent.winfo_reqwidth(), height = parent.winfo_reqheight())
+        
+        header = Label(frame, text = f"Booking #{length}", bg = "gray77", font = ("bold",18))
+        header.place(x = int(frame.winfo_reqwidth()/2) - int(header.winfo_reqwidth()/2), y = 30)
+                        
+        type_label = Label(frame, text = "Type: ", bg = "gray77", font = ("bold",13))
+        type_label.place(x = 20, y = 90)
+
+        type_of_booking_label = Label(frame, text = type_string, bg = "gray77", font = ("bold",13))
+        type_of_booking_label.place(x = 20 + type_label.winfo_reqwidth() , y = 90)
+        
+        lot_name_label = Label(frame, text = "Lot Name: ", bg = "gray77", font = ("bold",13))
+        lot_name_label.place(x = 20, y = 140)
+        lot_booked_label = Label(frame, text = lot_name, bg = "gray77", font = ("bold",13), wraplength= 250, justify="left")
+        lot_booked_label.place(x = 20 + lot_name_label.winfo_reqwidth() , y = 140)
+        
+        spot_label = Label(frame, text = "Spot: ", bg = "gray77", font = ("bold",13))
+        spot_label.place(x = 20, y = 240)
+        
+        spot_booked_label = Label(frame, text = spot, bg = "gray77", font = ("bold",13))
+        spot_booked_label.place(x = 20 + spot_label.winfo_reqwidth(), y = 240)
+        
+        amount_label = Label(frame, text = "Amount: ", bg = "gray77", font = ("bold",13))
+        amount_label.place(x = 20, y = 298)
+
+        amount_booked_label = Label(frame, text = f"${amount:.2f}", bg = "gray77", font = ("bold",18))
+        amount_booked_label.place(x = 20 + amount_label.winfo_reqwidth(), y = 290)
+        colour = "green" if outcome else "red"
+    
+        outcome_label = Label(frame, text = outcome_string, bg = "gray77", fg = colour, font = ("bold",18))
+        outcome_label.place(x = int(frame.winfo_reqwidth()/2) - int(outcome_label.winfo_reqwidth()/2), y = 343)
+        
+        date_label = Label(frame, text = f"{date}", fg = "gray58", bg = "gray77", font = ("bold",10))
+        date_label.place(x = int(frame.winfo_reqwidth()/2) - int(date_label.winfo_reqwidth()/2), y = frame.winfo_reqheight() - 30)      
+        
+        return frame
         
     def logoutUser(self):
         self.userPopupLabel.destroy()
@@ -3319,7 +3518,8 @@ class FindMeParkingApp(Tk):
             self.mySpot = choice(self.activeLot.ParkingLot_availableSpots)
         self.currentBooking.set_spot(self.mySpot[0])
         print(f"mySpot: {self.mySpot}")
-        self.document_booking()
+        self.document_booking(self.currentBooking)
+        self.previousbookings_List.append(self.currentBooking) 
         #self.mainCanvas.destroy()
         #self.create_mainCanvas()
         self.decorateCanvas(self.mainCanvas)
@@ -3488,15 +3688,25 @@ class FindMeParkingApp(Tk):
         mail = Bank_Statement(datetime.now(), self.fname, self.email, 500,  )
         self.inbox.append(mail)
         mail = Bank_Statement(datetime.now(), self.fname, self.email, 100.50, )
+        self.inbox.append(mail)
+        
+    def dummyMails4(self):
+        mail = Bank_Topup(datetime.now(), self.fname, self.email, 300, 500, True)
+        self.inbox.append(mail)
+        mail = Bank_Topup(datetime.now(), self.fname, self.email, 500.50, 400, False)
+        self.inbox.append(mail)
+        mail = Bank_Topup(datetime.now(), self.fname, self.email, 100.50, 200.50, True)
         self.inbox.append(mail) 
 
-    def setDummyMails(self, one:bool = False, two:bool = False, three:bool = False):
+    def setDummyMails(self, one:bool = False, two:bool = False, three:bool = False, four:bool = False):
         if one:
             self.dummyMails1()
         if two:
             self.dummyMails2()
         if three:
             self.dummyMails3()
+        if four:
+            self.dummyMails4()
 
     #this function is called if the mailbox is empty
     def emptyMailBox(self):
@@ -3779,7 +3989,7 @@ class FMPLot_Mail:
     def clickedmail(self, popupMail_width, popupMail_height, i = None):
         if i is not None:
             txt1 = 'for directions to get to'
-            txt2 = f'quickly and safely'
+            txt2 = 'quickly and safely'
             
             bg = "honeydew4"
             outline = "black"
@@ -3789,7 +3999,7 @@ class FMPLot_Mail:
             Button(popupMail, text = 'close', relief = "flat", font = ('bold', 12), fg = "red2", activeforeground = "red2", bg = bg, activebackground = bg, command = popupMail.destroy, bd = 2).place(x = 400, y = 10)
 
             headerContain = Label(popupMail, bg = bg)
-            header = Label(headerContain, text = f"Find Me Parking", font = ('bold', 15), fg = outline, bg = bg)
+            header = Label(headerContain, text = "Find Me Parking", font = ('bold', 15), fg = outline, bg = bg)
             Label(popupMail, text = "F", font = ('bold',30), borderwidth = 2, relief = "solid", ).place(x = 10, y = 50, width = 50, height = 50)
             lotname = self.lot_name.replace('\n', '')
             if len(lotname) > 30:
@@ -3858,7 +4068,7 @@ class Bank_Statement:
         footcontainer = Label(c, borderwidth = 0, )
         footer = Label(footcontainer,)
         footer.grid(row = 0, column = 0)
-        footer.config(text = f"[YOUR BANK]  Your account balance is: ...             ", font = ('bold', 10), )
+        footer.config(text = f"[YOUR BANK]  Your bank balance is: ...                ", font = ('bold', 10), )
         
         logo.place(x = 10, y = 15, width = 80, height = 80,)
         time.place(x = 400, y = 15)
@@ -3901,7 +4111,7 @@ class Bank_Statement:
     def clickedmail(self, popupMail_width:int, popupMail_height:int, i = None):
         if i is not None:
             txt1 = 'thank you for choosing'
-            txt2 = f'[BIG BANK]'
+            txt2 = '[BIG BANK]'
             
             bg = "honeydew4"
             outline = "black"
@@ -3921,12 +4131,125 @@ class Bank_Statement:
             popupMail.create_rectangle(6, 110, popupMail_width - 6, popupMail_height - 7, outline = outline, width = 2, fill = fill, tags="rectangle")
             
             popupMail.create_text(int(popupMail_width / 2), 200, text = f'Hello {self.name}', font = ('bold', 17))
-            popupMail.create_text(int(popupMail_width / 2), 240, text = 'Your account balance is:', font = ('bold', 17))
+            popupMail.create_text(int(popupMail_width / 2), 240, text = 'Your bank balance is:', font = ('bold', 17))
             balance_lbl = Label(popupMail, text = f"${self.balance:.2f}", font = ('bold',40), fg = "blue", bg = "#ffffff", justify = "center", wraplength=popupMail_width-6-6-10-10)
             balance_lbl.place(x = int(popupMail_width/2) - int(balance_lbl.winfo_reqwidth()/2), y = 340)
             
             popupMail.create_text(int(popupMail_width / 2), 520, text = txt1, font = ('bold', 12))            
             popupMail.create_text(int(popupMail_width / 2), 560, text = txt2, font = ('bold', 18))
+            
+            header.grid(row = 0, column = 0)
+            headerContain.place(x = 8, y = 10)
+            
+            popupMail.create_text(popupMail_width - 50, popupMail_height+4, text = 'Capstone Group 3', font = ('bold', 6), fill = "dark green")
+            popupMail.place(x = 6, y = 100, width = popupMail_width, height = popupMail_height+15)
+
+class Bank_Topup:
+    def __init__(self, time:datetime, name:str, email:str, amount:float, balance:float, failed_or_not:bool,):
+        self.distance = distance
+        self.time = time
+        self.name = name
+        self.email = email        
+        self.amount = amount
+        self.balance = balance
+        self.failed_or_not = failed_or_not
+
+    #this function creates a canvas widget to display mail information
+    def setMailCanvas(self, canvas:Canvas, width:int, popupMail_width:int, popupMail_height:int, i:int = None, parentCanvas:Canvas = None,):
+        self.parentCanvas = parentCanvas       
+        c = Canvas(canvas, height = 100, width = width, bd = 1, highlightbackground = "gray87",  relief = "flat", )
+        logo = Label(c, text = "Y", font = ('bold',50), borderwidth = 2, relief = "solid",)
+        time = Label(c, text = f'{self.time.strftime("%b %d")}', font = ('bold', 10),)       
+        header = Label(c,)
+        header.config(text = "YOUR BANK", font = ('bold', 17))
+        middle = Label(c,)
+        middle.config(text = f"{self.name} Account", font = ('bold', 12), anchor="w")
+        footcontainer = Label(c, borderwidth = 0, )
+        footer = Label(footcontainer,)
+        footer.grid(row = 0, column = 0)
+        footer.config(text = f"[YOUR BANK]  Your bank topup of ...          ", font = ('bold', 10), )
+        
+        logo.place(x = 10, y = 15, width = 80, height = 80,)
+        time.place(x = 400, y = 15)
+        header.place(x = 95, y = 9)
+        middle.place(x = 95, y = 44)
+        footcontainer.place(x = 95, y = 70, width = 360)
+        
+        logo.bind("<ButtonPress-1>", lambda event, a = i, b = popupMail_width, c = popupMail_height: self.clickedmail(b,c,a))
+        time.bind("<ButtonPress-1>", lambda event, a = i, b = popupMail_width, c = popupMail_height: self.clickedmail(b,c,a))
+        header.bind("<ButtonPress-1>", lambda event, a = i, b = popupMail_width, c = popupMail_height: self.clickedmail(b,c,a))
+        middle.bind("<ButtonPress-1>", lambda event, a = i, b = popupMail_width, c = popupMail_height: self.clickedmail(b,c,a))
+        footcontainer.bind("<ButtonPress-1>", lambda event, a = i, b = popupMail_width, c = popupMail_height: self.clickedmail(b,c,a))
+        footer.bind("<ButtonPress-1>", lambda event, a = i, b = popupMail_width, c = popupMail_height: self.clickedmail(b,c,a))
+        c.bind("<ButtonPress-1>", lambda event, a = i, b = popupMail_width, c = popupMail_height: self.clickedmail(b,c,a))
+        
+        if i % 3 == 0:
+            logo.configure(bg = 'azure3')
+            time.config(bg = 'papaya whip',)
+            header.config(bg = 'papaya whip',)
+            middle.config(bg = 'papaya whip',)
+            footcontainer.configure(bg = 'papaya whip')
+            footer.config(bg = 'papaya whip',)
+            c.configure(bg = 'papaya whip',)
+        elif i % 3 == 1:
+            logo.config(bg = 'papaya whip',)
+            time.configure(bg = 'PaleTurquoise2',)
+            header.config(bg = 'PaleTurquoise2',)
+            middle.configure(bg = 'PaleTurquoise2',)
+            footcontainer.configure(bg = 'PaleTurquoise2')
+            footer.configure(bg = 'PaleTurquoise2',)
+            c.configure(bg = 'PaleTurquoise2',)
+        else:
+            logo.configure(bg = 'PaleTurquoise2',)
+            time.config(bg = 'azure3',)
+            header.config(bg = 'azure3',)
+            middle.configure(bg = 'azure3')
+            footcontainer.configure(bg = 'azure3')
+            footer.configure(bg = 'azure3')
+            c.configure(bg = 'azure3')        
+        return c
+
+    #this function is called when a populated mail is clicked
+    def clickedmail(self, popupMail_width:int, popupMail_height:int, i = None):
+        if i is not None:
+            txt1 = 'thank you for choosing'
+            txt2 = '[BIG BANK]'
+            
+            bg = "honeydew4"
+            outline = "black"
+            mini_txt = "gray90"
+            fill  = "gray85"
+            popupMail = Canvas(self.parentCanvas, bg = bg, highlightbackground = outline)
+            Button(popupMail, text = 'close', relief = "flat", font = ('bold', 12), fg = "red2", activeforeground = "red2", bg = bg, activebackground = bg, command = popupMail.destroy, bd = 2).place(x = 400, y = 10)
+
+            headerContain = Label(popupMail, bg = bg)
+            header = Label(headerContain, text = f"{txt2}", font = ('bold', 15), fg = outline, bg = bg)
+            Label(popupMail, text = "B", font = ('bold',30), borderwidth = 2, relief = "solid", ).place(x = 10, y = 50, width = 50, height = 50)
+
+            Label(popupMail, text = f"{self.name} Bank Topup", font = ('bold',12), fg = mini_txt, bg = bg, justify = "left", wraplength=200).place(x = 65, y = 50)
+            Label(popupMail, text = f'{self.time.strftime("%b %d")}', font = ('bold',9), fg = mini_txt, bg = bg).place(x = 405, y = 56)
+            Label(popupMail, text = f'to: {self.email}', font = ('bold',10), fg = mini_txt, bg = bg).place(x = 65, y = 71)
+            
+            popupMail.create_rectangle(6, 110, popupMail_width - 6, popupMail_height - 7, outline = outline, width = 2, fill = fill, tags="rectangle")
+            
+            popupMail.create_text(int(popupMail_width / 2), 200, text = f'Hello {self.name}', font = ('bold', 17))
+            popupMail.create_text(int(popupMail_width / 2), 240, text = 'Your bank topup of ', font = ('bold', 15))
+            amount_lbl = Label(popupMail, text = f"${self.amount:.2f}", font = ('bold',40), fg = "blue", bg = "#ffffff", justify = "center", wraplength=popupMail_width-6-6-10-10)
+            amount_lbl.place(x = int(popupMail_width/2) - int(amount_lbl.winfo_reqwidth()/2), y = 300)
+            
+            if self.failed_or_not:
+                popupMail.create_text(int(popupMail_width / 2), 420, text = 'was successful!', font = ('bold', 15))
+                popupMail.create_text(int(popupMail_width / 2), 460, text = 'Your new balance is', font = ('bold', 15))
+                balance_lbl = Label(popupMail, text = f"${self.balance:.2f}", font = ('bold',28), fg = "green", bg = fill, justify = "center", wraplength=popupMail_width-6-6-10-10)
+                balance_lbl.place(x = int(popupMail_width/2) - int(balance_lbl.winfo_reqwidth()/2), y = 520)                
+            else:
+                popupMail.create_text(int(popupMail_width / 2), 420, text = 'was unsuccessful!', font = ('bold', 15))
+                popupMail.create_text(int(popupMail_width / 2), 460, text = 'Your bank balance is', font = ('bold', 15))
+                balance_lbl = Label(popupMail, text = f"${self.balance:.2f}", font = ('bold',28), fg = "red2", bg = fill, justify = "center", wraplength=popupMail_width-6-6-10-10)
+                balance_lbl.place(x = int(popupMail_width/2) - int(balance_lbl.winfo_reqwidth()/2), y = 520)
+            
+            popupMail.create_text(int(popupMail_width / 2), 670, text = txt1, font = ('bold', 12))            
+            popupMail.create_text(int(popupMail_width / 2), 700, text = txt2, font = ('bold', 18))
             
             header.grid(row = 0, column = 0)
             headerContain.place(x = 8, y = 10)
@@ -3966,14 +4289,9 @@ class Browser:
         self.webview_window = None
         self.parent.deiconify()
 
-class Booking: # type:str, spot:str, time:datetime, amount:int, success:bool):
+class Booking:
     def __init__(booking, lot_name:str,):
         booking.__lot_name = lot_name
-        #booking.type = f"{type} booking" 
-        #booking.spot = spot
-        #booking.time = time
-        #booking.amount = amount
-        #booking.success = "Successful" if success else "Failed"
         
     def set_lot_name(booking, lot_name:str):
         booking.__lot_name = lot_name

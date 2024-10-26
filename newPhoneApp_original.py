@@ -146,7 +146,7 @@ class FindMeParkingApp(Tk):
                     self.exp_month = lines[10].strip('\n')
                     self.exp_year = lines[11].strip('\n')
                     self.userExists = True
-                    #self.userExists = False
+                    self.userExists = False
         except:
             pass
         self.userMetTerms()
