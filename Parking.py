@@ -35,7 +35,6 @@ class QueueFrontier(StackFrontier):
             self.frontier = self.frontier[1:]
             return node
 
-
 class ParkingLot():
     def __init__(self, contents,lot_sides,start,goal,typer,spot,imagename,lotnumber):
         self.typer = typer

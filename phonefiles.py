@@ -1,4 +1,5 @@
 import os
+
 def setPath():
     # get the current working directory
     return os.getcwd().replace('\\','/')
@@ -20,5 +21,7 @@ locations = [
     (18.061493743046423, -76.80044868317515),
 ]
 
-
 phone_app_screen = f"{setPath()}/phone_app_screen.jpg"
+
+pip_packages = ["pywin32","geopy","pywebview","lorem-text","openrouteservice",
+            "pillow","tk","tkintermapview","mysql-connector-python"]

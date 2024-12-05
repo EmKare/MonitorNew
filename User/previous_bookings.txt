@@ -8,3 +8,8 @@ NMIA Parking Lot C#2#NONE#2024-10-26 14:01:05#200#0
 Parking along Marcus Garvey Drive - A#2#A7#2024-10-26 21:20:18#200#1
 UDC Parking Lot#2#B3#2024-10-26 22:10:57#200#1
 Winchester Business Center#1#E1#2024-10-26 22:15:29#100#1
+Shortwood Teacher's College - B#2#NONE#2024-10-27 00:05:15#200#0
+Manor Park Plaza#2#NONE#2024-12-02 10:12:22#200#0
+NMIA Parking Lot B#2#E1#2024-12-02 10:13:33#200#1
+Manor Park Plaza#2#C9#2024-12-02 10:24:53#200#1
+Parking for Scotia Investments & Bank Of Jamaica #2#B8#2024-12-03 21:49:53#200#1

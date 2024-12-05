@@ -15,6 +15,7 @@ from itertools import islice
 from lorem_text import lorem
 from geopy import distance
 import phonefiles as files
+import mysql.connector
 from os import listdir
 import webview as web
 import win32api
@@ -27,7 +28,9 @@ class FindMeParkingApp(Tk):
         #set window width and height
         __screen_width = win32api.GetSystemMetrics(0)
         __screen_height = win32api.GetSystemMetrics(1)
+        #print(f"w:{__screen_width}, h:{__screen_height}")
         self.width, self.height = int(__screen_width/3.84), int(__screen_height/1.152)
+        
         #set window geometry, along with window placement
         self.geometry(f'{self.width}x{self.height}+300+0')
         #window cannot be resized
@@ -87,17 +90,23 @@ class FindMeParkingApp(Tk):
         username = ""
         
         #NEW
+        self.database = "FindMeParking"
+        self.connected_to_deatabase = False
+        self.connect_to_database()
         
         self.client = ors.Client(key = '5b3ce3597851110001cf62480f6929fa14f1415b865522ca5d94fb50')
         #self.distanceService = Nominatim(user_agent = "geoapiExercises")
         self.locationService = Nominatim(user_agent="Geopy Library")
         self.locations = []
         self.getLocations()
+        #checks if user already exists
+        self.checkLoggedInUser()
+        
         self.previousbookings_List = []
-        self.get_previousbookings()
+        self.get_previousbookingsFromDB()
         self.mySpot = None
         self.termsAgreed = bool(self.checkTerms())
-        self.bankBalance = 1000 #MIGHT NEED A SETTER n GETTER
+        self.bankBalance = 10 #MIGHT NEED A SETTER n GETTER
         self.available_lots = {}
         self.more_available_lots = {}
         self.COUNT = 1
@@ -126,8 +135,8 @@ class FindMeParkingApp(Tk):
         #frame that surrounds working area
         self.labelFrame = LabelFrame(self, width = self.width - 10, height = self.height - 10)
         self.labelFrame.pack()#lace(x = 5, y = 5)
-        #checks if user already exists
-        self.userCheck()
+        
+        #self.userCheck()
         #calls 'homePage' function
         self.homePage()
         
@@ -136,6 +145,20 @@ class FindMeParkingApp(Tk):
         #self.open_close()
         self.run_app()
         
+    def connect_to_database(self):
+        self.mydb = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="1234",
+            database= self.database
+            )
+        self.mycursor = self.mydb.cursor()
+        self.connected_to_deatabase = True
+        
+    def disconnect_from_database(self):
+        self.mydb.close()
+        self.connected_to_deatabase = False
+        
     def set_bankBalance(self, bankBalance:int):
         self.bankBalance = bankBalance
 
@@ -143,7 +166,48 @@ class FindMeParkingApp(Tk):
         #self.lift()
         self.mainloop()
 
-    #this function checks if a user account exists
+    def checkLoggedInUser(self):
+        try:
+            with open(f"{files.user_profile}userCheck.txt","r") as file:                
+                self.userNo = int(file.read())
+        except Exception:
+            self.userNo = 0
+        self.checkForUser()
+    
+    def checkForUser(self):
+        if self.userNo != 0:
+            user = (self.userNo,)
+            try:
+                self.get_UserCredentials(user)
+                self.userMetTerms()
+            except Exception:
+                print(f"ERROR FETHING USER DATA @ {self.userNo}")
+                self.destroy()
+        else:
+            self.userExists = False
+            self.userMetTerms()
+    
+    def get_UserCredentials(self, user:tuple):
+        self.mycursor.execute("SELECT * FROM FindMeParking_USERS WHERE user_number = %s;", user)
+        myresult = self.mycursor.fetchall()
+        for line in myresult:
+            self.username = line[1].strip()
+            self.password = line[2].strip()
+            self.gender = line[3].strip()
+            self.fname = line[4].strip()
+            self.lname = line[5].strip()
+            self.email = line[6].strip()
+            self.phone = int(line[7])
+            self.id = line[8].strip()
+            self.card = int(line[9])
+            self.cvv = line[10].strip()
+            self.exp_month = line[11].strip()
+            self.exp_year = line[12].strip()
+        self.userExists = True
+        self.disconnect_from_database()
+        self.connect_to_database()
+
+    #this function checks if a user account exists #### DEPRICIATED, BUT NOT DELETED YET
     def userCheck(self):
         try:
             with open(f"{files.user_profile}UserProfile.txt","r") as file:
@@ -583,7 +647,7 @@ class FindMeParkingApp(Tk):
                 self.userExists = True
                 self.termsAgreed = True
                 self.userMetTerms()
-                self.createSecondMainButton()
+                #self.createSecondMainButton()
                 self.checkWhichScreenIWasOn()
         else:
             #function calls itself
@@ -779,6 +843,10 @@ class FindMeParkingApp(Tk):
         
     def appMap(self):
         try:
+            self.map_widget.destroy()
+        except Exception:
+            pass
+        try:
             self.clearCanvasToLayMap()
         except Exception:
             pass
@@ -808,6 +876,7 @@ class FindMeParkingApp(Tk):
         self.map_widget.set_zoom(16)
         self.map_widget.add_left_click_map_command(self.left_click_event)
         
+        self.left_click, self.selected_a_spot, self.route_set = False, False, False
         self.left_click_event(coordinates_tuple)
         
         #0.005, 
@@ -1216,7 +1285,7 @@ class FindMeParkingApp(Tk):
             
             c.create_text(20,15,text = f'{num}', font = ('bold', 10), fill = "lightgray")
             
-            title = Label(c, text = name, font = ('bold', 15, 'underline'), bg = "azure")
+            title = Label(c, text = name, font = ('bold', 15, 'underline'), bg = "azure", wraplength = 450)
             title.place(x = int(c.winfo_reqwidth()/2) - int(title.winfo_reqwidth()/2), y = 5)
             
             text = self.getReview(fullstar, nullstar)
@@ -1385,7 +1454,9 @@ class FindMeParkingApp(Tk):
         lot_label = Label(self.userAccountCanvas, text = "Lot:", font = ("bold",13,), bg = "gray79", fg = "grey35")
         lot_label.place(x = 20, y = 160)
         
-        booking_lot_label = Label(self.userAccountCanvas, text = f"{name}", font = ("bold",13,), bg = "gray79", wraplength=420, justify = "left")
+        wraplength = 420 if len(name) < 30 else 300
+        
+        booking_lot_label = Label(self.userAccountCanvas, text = f"{name}", font = ("bold",13,), bg = "gray79", wraplength=wraplength, justify = "left")
         booking_lot_label.place(x = 60, y = 160)
         
         btn1 = Button(self.userAccountCanvas, text = "PROCEED", font = ('bold', 13), relief = "groove", command = lambda: self.check_payment(amount, res_type, url, name, parkingLot, distance,))       
@@ -1550,7 +1621,7 @@ class FindMeParkingApp(Tk):
         #try: del self.currentBooking
         #except Exception: pass
         
-        self.selected_a_spot, self.route_set = False, False
+        self.selected_a_spot, self.route_set, self.left_click = False, False, False
         try: self.mainCanvas.destroy()
         except Exception: pass
         self.create_mainCanvas()
@@ -1594,33 +1665,49 @@ class FindMeParkingApp(Tk):
         except Exception: pass
 
     def document_booking(self, booking):
-        f = open(f"{files.user_profile}previous_bookings.txt", "a")
         
         lotname = booking.get_lot_name().replace('\n', '')
-        f.write(f"{lotname}#") #name
-        f.write(f"{booking.get_type()}#") #type
-        f.write(f"{booking.get_spot()}#") #spot
-        f.write(f'{booking.get_time().strftime("%Y-%m-%d %H:%M:%S")}#') #time
-        f.write(f"{booking.get_amount()}#") #amount
-        f.write(f"{int(booking.get_outcome())}\n") #outcome
+        line = ""
+        line += f"{lotname}#" #name
+        line += f"{booking.get_type()}#" #type
+        line += f"{booking.get_spot()}#" #spot
+        line += f'{booking.get_time().strftime("%Y-%m-%d %H:%M:%S")}#' #time
+        line += f"{booking.get_amount()}#" #amount
+        line += f"{int(booking.get_outcome())}" #outcome  
         
-        f.close()#name,type,spot,time,amount,outcome
-        
-    def get_previousbookings(self,):                        
-        with open(f"{files.user_profile}previous_bookings.txt","r") as f: 
-            for line in f:
-                if len(line) > 0:
-                    word = line.rstrip().split('#')
-                    #name,type,spot,time,amount,outcome
-                    booking = Booking(word[0].strip()) #name
-                    booking.set_type(int(word[1].strip())) #type
-                    booking.set_spot(word[2].strip()) #spot
-                    date = word[3].strip()
-                    booking.set_time(datetime.strptime(date, "%Y-%m-%d %H:%M:%S")) #time
-                    booking.set_amount(float(word[4].strip())) #amount
-                    outcome = int(word[5].strip())
-                    booking.set_outcome(bool(outcome)) #outcome
-                    self.previousbookings_List.append(booking)
+        if not self.connected_to_deatabase:
+            self.connect_to_database()
+        if self.connected_to_deatabase:
+            sql = "INSERT INTO FindMeParking_USER_PreviousBookings (user_PreviousBookings_usernumber,user_PreviousBookings_String) VALUES (%s, %s)"        
+            val = (self.userNo, line.strip(),)
+            self.mycursor.execute(sql, val)
+            self.mydb.commit()
+            self.disconnect_from_database()
+            self.connect_to_database()
+        else:
+            print("ERROR CONNECTING TO DATABASE")
+
+    def get_previousbookingsFromDB(self,):
+        user = (self.userNo,)
+        self.mycursor.execute("SELECT user_PreviousBookings_no, user_PreviousBookings_String FROM FindMeParking_USER_PreviousBookings WHERE user_PreviousBookings_usernumber = %s;", user)
+        myresult = self.mycursor.fetchall()
+        if len(myresult) > 0:
+            self.get_previousbookings(myresult)
+
+    def get_previousbookings(self,myresult):                         
+            for line in myresult:
+                word = line[1].rstrip().split('#')
+                #name,type,spot,time,amount,outcome
+                booking = Booking(word[0].strip()) #name
+                booking.set_lot_number(line[0])
+                booking.set_type(int(word[1])) #type
+                booking.set_spot(word[2].strip()) #spot
+                date = word[3].strip()
+                booking.set_time(datetime.strptime(date, "%Y-%m-%d %H:%M:%S")) #time
+                booking.set_amount(float(word[4])) #amount
+                outcome = int(word[5])
+                booking.set_outcome(bool(outcome)) #outcome
+                self.previousbookings_List.append(booking)
 
     def set_Max_Min_Zoom(self, min:int, max:int):
         self.map_widget.max_zoom = max
@@ -1984,7 +2071,7 @@ class FindMeParkingApp(Tk):
         self.passwordEntry = Entry(self.userAccountCanvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('bold',15), justify = "center", show = "\u2022",)
         self.passwordEntry.place(x = 20, y = 370, width = self.userAccountCanvas.winfo_reqwidth() - 40, height = 40)
         
-        self.login_Button = Button(self.userAccountCanvas, text = "Login", font = ('bold',20), fg = "blue", highlightthickness = 0,  bd = 0, relief = "flat", command = lambda : self.userLogin())
+        self.login_Button = Button(self.userAccountCanvas, text = "Login", font = ('bold',20), fg = "blue", highlightthickness = 0,  bd = 0, relief = "flat", command = lambda : self.checkIfUserInDatabase())
         self.login_Button.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - 70, y = 460, width = 140, height = 50)
     
         self.userAccountCanvas.create_text(160, 550, text = "Don't have an account?", font = ('bold', 10), justify = "left", fill = "cornflower blue", tags = "login")
@@ -1996,7 +2083,39 @@ class FindMeParkingApp(Tk):
         self.passwordEntry.bind("<FocusIn>", self.clearLabel)
         self.userAccountCanvas.bind("<ButtonPress-1>", self.clearLabel)
 
-    #this function is called when a user is trying to log in 
+    def checkIfUserInDatabase(self):
+        #if 'usernameEntry' is not blank 
+        if len(self.usernameEntry.get()) != 0:
+            #if 'passwordEntry' is not blank
+            if len(self.passwordEntry.get()) != 0:
+                #if the data in 'usernameEntry' is the same ss the user password
+                if not self.connected_to_deatabase:
+                    self.connect_to_database()
+                if self.connected_to_deatabase:
+                    user = (self.usernameEntry.get(), self.passwordEntry.get(),)
+                    self.mycursor.execute("SELECT user_number FROM FindMeParking_USERS WHERE user_username = %s AND user_password = %s;", user);
+                    myresult = self.mycursor.fetchall()
+                    if len(myresult) != 0:
+                        self.userNo = myresult[0][0]
+                        self.log_userNo(self.userNo)
+                        self.get_UserCredentials(myresult[0])                        
+                        self.login_confirm()
+                    else:
+                        #if username entered != self.username
+                        self.empty_Label.config(text = "Invalid Credentials", fg = "old lace", bg = "red2")
+                        self.disconnect_from_database()
+            else:
+                #if 'passwordEntry' is blank
+                self.empty_Label.config(text = "'Password' is blank", fg = "old lace", bg = "red2")
+        else:
+            #if 'usernameEntry' is blank
+            self.empty_Label.config(text = "'Username' is blank", fg = "old lace", bg = "red2")
+        try:
+            self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
+        except Exception:
+            pass
+
+    #this function is called when a user is trying to log in #TRUNCATED BUT NOT YET DELETED
     def userLogin(self):
         #if 'usernameEntry' is not blank 
         if len(self.usernameEntry.get()) != 0:
@@ -2566,8 +2685,10 @@ class FindMeParkingApp(Tk):
                     self.password = self.RpasswordEntry.get()
                     global username
                     username = self.username
-                    self.saveAccountInfo()
-                    self.confirmRegistration()
+                    self.saveAccountInfo_toDB()
+                    self.get_userNoFromDB()
+                    self.log_userNo(self.userNo)
+                    self.confirmRegistration()                    
                 else:
                     self.empty_Label.config(text = "'Password' too short", fg = "old lace", bg = "red2")
                     self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15) 
@@ -2576,7 +2697,13 @@ class FindMeParkingApp(Tk):
                 self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15) 
         else:
             self.empty_Label.config(text = "'Username' is blank", fg = "old lace", bg = "red2")
-            self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)     
+            self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
+            
+    def get_userNoFromDB(self):
+        val = (self.email,)
+        self.mycursor.execute("SELECT user_number FROM FindMeParking_USERS WHERE user_email = %s",val)
+        myresult = self.mycursor.fetchall()
+        self.userNo = myresult[0][0]
 
     #this function writes the 'User information' to a text file
     def saveAccountInfo(self):
@@ -2594,6 +2721,53 @@ class FindMeParkingApp(Tk):
         f.write(f"{self.exp_month}\n")
         f.write(f"{self.exp_year}")        
         f.close()
+        self.saveAccountInfo_toDB()
+    
+    #this function inserts the 'User information' into a database table
+    def saveAccountInfo_toDB(self):
+        if not self.connected_to_deatabase:
+            self.connect_to_database()
+        if self.connected_to_deatabase:
+            sql = f"INSERT INTO {self.database}_USERS \
+                (user_username, user_password, user_gender, user_fname, user_lname, user_email, user_tele, user_id, user_cardNo, user_cvv, user_exp_month, user_exp_year) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"    
+            val = (self.username,self.password,self.gender,self.fname.capitalize(),self.lname.capitalize(),
+                self.email,self.phone,self.id, self.card,self.cvv,self.exp_month,self.exp_year)
+            self.mycursor.execute(sql, val)
+            self.mydb.commit()
+        else:
+            print("ERROR CONNECTING TO DATABASE")
+        self.disconnect_from_database()
+        self.connect_to_database()
+        
+    def updateAccountInfo_toDB(self):
+        if not self.connected_to_deatabase:
+            self.connect_to_database()
+        if self.connected_to_deatabase:
+            try:
+                sql = "UPDATE FindMeParking_USERS SET \
+                        user_username  = %s, \
+                        user_password  = %s, \
+                        user_gender  = %s, \
+                        user_fname  = %s, \
+                        user_lname  = %s, \
+                        user_email = %s, \
+                        user_tele = %s, \
+                        user_id = %s, \
+                        user_cardNo = %s, \
+                        user_cvv = %s, \
+                        user_exp_month = %s, \
+                        user_exp_year = %s \
+                        WHERE user_number = %s;"            
+                val = (self.username,self.password,self.gender,self.fname.capitalize(),self.lname.capitalize(),
+                    self.email,self.phone,self.id, self.card,self.cvv,self.exp_month,self.exp_year, self.userNo)
+                self.mycursor.execute(sql, val)
+                self.mydb.commit()
+            except Exception:
+                print("ERROR SAVING DATA TO DATABASE")
+        else:
+            print("ERROR CONNECTING TO DATABASE")
+        self.disconnect_from_database()
+        self.connect_to_database()
 
     #this is 1 of 3 times the progress bar will be displayed in this app
     #this function creates the mini 'saving data' above 'mainCanvas'.
@@ -2675,6 +2849,11 @@ class FindMeParkingApp(Tk):
         except Exception: pass
         try: self.userPopupLabel.destroy()
         except Exception: pass
+        try:
+            self.previousbookings_List.clear()
+            self.get_previousbookingsFromDB()
+        except Exception:
+            pass
         
         self.decorateCanvas(self.mainCanvas)
         self.create_rectangle(self.mainCanvas, 0, 0, self.mainCanvas.winfo_reqwidth() - 4, self.mainCanvas.winfo_reqheight() - 4, fill='snow', alpha=.6, tags = "blur")
@@ -2708,7 +2887,7 @@ class FindMeParkingApp(Tk):
                 
 
                 solo_frame = self.booking_Frame(previous_bookings_frame,
-                                                len(self.previousbookings_List), 
+                                                self.previousbookings_List[0].get_lot_number(), 
                                                 self.previousbookings_List[0].get_type_string().upper(), 
                                                 self.previousbookings_List[0].get_lot_name().upper(), 
                                                 self.previousbookings_List[0].get_spot().upper(), 
@@ -2729,7 +2908,7 @@ class FindMeParkingApp(Tk):
                 
                 for index, bookings in enumerate(self.previousbookings_List):
                     theframe = self.booking_Frame(parent_container,
-                                                index+1,
+                                                    bookings.get_lot_number(),
                                                   bookings.get_type_string().upper(), 
                                                   bookings.get_lot_name().upper(),
                                                   bookings.get_spot().upper(), 
@@ -2823,7 +3002,9 @@ class FindMeParkingApp(Tk):
     
     def logOut(self):
         self.userExists = False
+        self.createUser = True
         self.has_activeLot = False
+        self.log_userNo()
         self.mainCanvas.after(2000,)
         try:
             self.mainCanvas.destroy()
@@ -2833,7 +3014,12 @@ class FindMeParkingApp(Tk):
         self.mainCanvas = Canvas(self.labelFrame, width = self.width - 20, height = self.height - 20, bg = "#ffffff")
         self.mainCanvas.place(x = 0, y = 0)
         
-        self.start() 
+        self.start()
+        
+    def log_userNo(self, userNo:int = 0):
+        f = open(files.user_profile+"userCheck.txt", "w")
+        f.write(f"{userNo}")
+        f.close()
     
     def cancelLogout(self):
         self.mainCanvas.delete("logout-blur")
@@ -2946,7 +3132,7 @@ class FindMeParkingApp(Tk):
         self.mainCanvas.bind("<ButtonPress-1>", self.clear_error)
         
     def saveUserProfile(self):
-        self.saveAccountInfo()
+        self.updateAccountInfo_toDB()
         self.mainCanvas.unbind("<ButtonPress-1>")
         try:
             self.mainCanvas.delete("user-password")
@@ -3205,9 +3391,15 @@ class FindMeParkingApp(Tk):
         if len(self.editemail_Entry.get()) != 0:
             regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
             if(re.fullmatch(regex, self.editemail_Entry.get())):
-                self.email = self.editemail_Entry.get()
-                self.editError.config(text = "Email Updated", fg = "medium blue")
-                self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+                val = (self.editemail_Entry.get(),)
+                already_has_email = self.checkIfEmailAlreadyExists(val)
+                if not already_has_email:                
+                    self.email = self.editemail_Entry.get()
+                    self.editError.config(text = "Email Updated", fg = "medium blue")
+                    self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
+                else:
+                    self.editError.config(text = "'Email' already exists", fg = "red2")
+                    self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
             else:
                 self.editError.config(text = "Error saving 'Email'", fg = "red2")
                 self.editError.place(x = int((self.mainCanvas.winfo_reqwidth() / 2) - (self.editError.winfo_reqwidth() / 2)), y = 100)
@@ -3219,7 +3411,17 @@ class FindMeParkingApp(Tk):
         self.email_lbl_edit.config(text = "edit")
         self.editemail_Entry.destroy()
         self.email_lbl = Label(self.mainCanvas, text = self.email, font = ('bold', 15), width = 14, height = 1, bg = "gray85")
-        self.email_lbl.place(x = 10, y = 300) 
+        self.email_lbl.place(x = 10, y = 300)
+        
+    def checkIfEmailAlreadyExists(self, val:tuple):
+        if not self.connected_to_deatabase:
+            self.connect_to_database()
+        if self.connected_to_deatabase:
+            self.mycursor.execute("SELECT * FROM FindMeParking_USERS WHERE user_email = %s", val)
+            myresult = self.mycursor.fetchall()
+        self.disconnect_from_database()
+        self.connect_to_database()
+        return True if len(myresult) > 0 else False
 
     def edit_lname(self, event):
         self.editError.config(fg = "red2")
@@ -3563,11 +3765,11 @@ class FindMeParkingApp(Tk):
         #If there is an active user present, send them a confirmation mail (450,400)
         if self.userExists:
             #create entrance map 'mail' item
-            mail = FMPSpot_Mail(self.lot_name, self.distanceFromYOU, self.mySpot[0], "Entrance Map", 1, datetime.now(), self.email, image = self.EntranceMap_mail, url = self.loturl, browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
+            mail = FMPSpotSuccess_Mail(self.lot_name, self.distanceFromYOU, self.mySpot[0], "Entrance Map", 1, datetime.now(), self.email, image = self.EntranceMap_mail, url = self.loturl, browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
             #mail = Mail(self.lot_name, self.distanceFromYOU, self.mySpot[0], "Entrance Map", 1, datetime.now(), image = self.EntranceMap_mail)
             self.inbox.append(mail)
             #create exit map 'mail' item
-            mail = FMPSpot_Mail(self.lot_name, self.distanceFromYOU, self.mySpot[0], "Exit Map", 2, datetime.now(), self.email, image = self.ExitMap_mail, url = self.loturl, browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
+            mail = FMPSpotSuccess_Mail(self.lot_name, self.distanceFromYOU, self.mySpot[0], "Exit Map", 2, datetime.now(), self.email, image = self.ExitMap_mail, url = self.loturl, browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
             #mail = Mail(self.lot_name, self.distanceFromYOU, self.mySpot[0], "Exit Map", 2, datetime.now(), image = self.ExitMap_mail)
             self.inbox.append(mail)
 
@@ -3657,21 +3859,21 @@ class FindMeParkingApp(Tk):
     #these functions are used to check if 'self.gotMail()' works properly
     def dummyMails1(self):
         self.createDummyImages()
-        mail = FMPSpot_Mail("First Parking Lot", 100, "A4", "Entrance Map", 1, datetime.now(), self.email, self.dummyEntImage, url="http://www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
+        mail = FMPSpotSuccess_Mail("First Parking Lot", 100, "A4", "Entrance Map", 1, datetime.now(), self.email, self.dummyEntImage, url="http://www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
         self.inbox.append(mail)
-        mail = FMPSpot_Mail("First Parking Lot", 100, "A4", "Exit Map", 2, datetime.now(), self.email, self.dummyExtImage, url="www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
+        mail = FMPSpotSuccess_Mail("First Parking Lot", 100, "A4", "Exit Map", 2, datetime.now(), self.email, self.dummyExtImage, url="www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
         #self.inbox.append(mail)
-        mail = FMPSpot_Mail("Second Parking Lot", 200, "A4", "Entrance Map", 1, datetime.now(), self.email, self.dummyEntImage, url="www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
+        mail = FMPSpotSuccess_Mail("Second Parking Lot", 200, "A4", "Entrance Map", 1, datetime.now(), self.email, self.dummyEntImage, url="www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
         #self.inbox.append(mail)
-        mail = FMPSpot_Mail("Second Parking Lot", 200, "A4", "Exit Map", 2, datetime.now(), self.email, self.dummyExtImage, url="www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
+        mail = FMPSpotSuccess_Mail("Second Parking Lot", 200, "A4", "Exit Map", 2, datetime.now(), self.email, self.dummyExtImage, url="www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
         #self.inbox.append(mail)
-        mail = FMPSpot_Mail("Third Parking Lot", 300, "A4", "Entrance Map", 1, datetime.now(), self.email, self.dummyEntImage, url="http://www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
+        mail = FMPSpotSuccess_Mail("Third Parking Lot", 300, "A4", "Entrance Map", 1, datetime.now(), self.email, self.dummyEntImage, url="http://www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
         #self.inbox.append(mail)
-        mail = FMPSpot_Mail("ThirdParkingLot1234567890123456", 300, "A4", "Exit Map", 2, datetime.now(), self.email, self.dummyExtImage, url="http://www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
+        mail = FMPSpotSuccess_Mail("ThirdParkingLot1234567890123456", 300, "A4", "Exit Map", 2, datetime.now(), self.email, self.dummyExtImage, url="http://www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
         self.inbox.append(mail)
-        mail = FMPSpot_Mail("Intersection of Maxfield Avenue \n& Hagley Park Road", 400, "A4", "Entrance Map", 1, datetime.now(), self.email, self.dummyEntImage, url="http://www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
+        mail = FMPSpotSuccess_Mail("Intersection of Maxfield Avenue \n& Hagley Park Road", 400, "A4", "Entrance Map", 1, datetime.now(), self.email, self.dummyEntImage, url="http://www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
         self.inbox.append(mail)
-        mail = FMPSpot_Mail("Intersection of Maxfield Avenue \n& Hagley Park Road", 400, "A4", "Exit Map", 2, datetime.now(), self.email, self.dummyExtImage, url="www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
+        mail = FMPSpotSuccess_Mail("Intersection of Maxfield Avenue \n& Hagley Park Road", 400, "A4", "Exit Map", 2, datetime.now(), self.email, self.dummyExtImage, url="www.google.com", browser_width= self.mainCanvas.winfo_reqwidth() - 70, browser_height=self.mainCanvas.winfo_reqheight() - 120)
         #self.inbox.append(mail)
         
     def dummyMails2(self):
@@ -3802,9 +4004,9 @@ class FindMeParkingApp(Tk):
         self.mainCanvas.destroy()
         self.homePage()
                 
-#The mail class
-#this are simple classes to construct what the 'emails' are to look like
-class FMPSpot_Mail:
+#The mail classes
+#this are simple classes to construct what the 'emails' would look like
+class FMPSpotSuccess_Mail:
     def __init__(self, lot_name:str, distance:float, spot:str, header:str, type:int, time:datetime, email:str, image = None, url:str = "", browser_width:int = 0, browser_height:int = 0):
         self.lot_name = lot_name
         self.distance = distance
@@ -4257,6 +4459,9 @@ class Bank_Topup:
             popupMail.create_text(popupMail_width - 50, popupMail_height+4, text = 'Capstone Group 3', font = ('bold', 6), fill = "dark green")
             popupMail.place(x = 6, y = 100, width = popupMail_width, height = popupMail_height+15)
 
+#The Browser class
+#this class creates a simple browser for viewing the route to the parking
+#lot in Google Maps
 class Browser:
     def __init__(self, title:str, url:str, width:int, height:int):
         self.webview_window = None
@@ -4289,15 +4494,20 @@ class Browser:
         self.webview_window = None
         self.parent.deiconify()
 
+#The Booking class
+#this class creates an object of a previos booking made
 class Booking:
     def __init__(booking, lot_name:str,):
-        booking.__lot_name = lot_name
-        
-    def set_lot_name(booking, lot_name:str):
         booking.__lot_name = lot_name
     
     def get_lot_name(booking,):
         return booking.__lot_name
+    
+    def set_lot_number(booking, lot_number:str):
+        booking.__lot_number = lot_number
+        
+    def get_lot_number(booking,):
+        return booking.__lot_number
         
     def set_type(booking, type:int):
         booking.__type = type
