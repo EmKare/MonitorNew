@@ -56,12 +56,8 @@ class FindMeParkingApp(Tk):
         self.displayingSpotScreen_bool = False        
         #User information: this could be placed in 
         #a 'User' class in the future
-        self.gender = None
-        self.fname, self.lname, self.email = "", "", ""
-        self.phone, self.card = 0, 0,
-        self.cvv, self.id = "", ""
-        self.exp_month, self.exp_year = None, None
-        self.username, self.password = "", ""
+        self.freshUserVariables()
+        
         #list with month numbers for card expiration date     
         self.months = [f"0{i}" if i < 10 else f"{i}" for i in range(1,13)] #["01","02","03","04","05","06","07","08","09","10","11","12"] 
         
@@ -144,6 +140,14 @@ class FindMeParkingApp(Tk):
         #calls the tkinter 'mainloop' function to start app
         #self.open_close()
         self.run_app()
+    
+    def freshUserVariables(self):
+        self.gender = None
+        self.fname, self.lname, self.email = "", "", ""
+        self.phone, self.card = 0, 0,
+        self.cvv, self.id = "", ""
+        self.exp_month, self.exp_year = None, None
+        self.username, self.password = "", ""
         
     def connect_to_database(self):
         self.mydb = mysql.connector.connect(
@@ -2097,13 +2101,21 @@ class FindMeParkingApp(Tk):
                     myresult = self.mycursor.fetchall()
                     if len(myresult) != 0:
                         self.userNo = myresult[0][0]
-                        self.log_userNo(self.userNo)
-                        self.get_UserCredentials(myresult[0])                        
-                        self.login_confirm()
+                        if not self.checkIfUserIsValid():
+                            self.log_userNo(self.userNo)
+                            self.get_UserCredentials((self.userNo,))                        
+                            self.login_confirm()
+                        else:
+                            self.empty_Label.config(text = "Invalid User", fg = "old lace", bg = "red2")
+                            try: self.disconnect_from_database()
+                            except Exception: pass
+                            #self.freshUserVariables()
+                            #self.exitProtocol() #lol
                     else:
                         #if username entered != self.username
                         self.empty_Label.config(text = "Invalid Credentials", fg = "old lace", bg = "red2")
-                        self.disconnect_from_database()
+                        try: self.disconnect_from_database()
+                        except Exception: pass
             else:
                 #if 'passwordEntry' is blank
                 self.empty_Label.config(text = "'Password' is blank", fg = "old lace", bg = "red2")
@@ -2114,6 +2126,15 @@ class FindMeParkingApp(Tk):
             self.empty_Label.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(self.empty_Label.winfo_reqwidth() / 2), y = 15)
         except Exception:
             pass
+        
+    def checkIfUserIsValid(self):
+        if not self.connected_to_deatabase:
+            self.connect_to_database()
+        if self.connected_to_deatabase:
+            user = (self.userNo,)
+            self.mycursor.execute("SELECT blocked_user_email FROM FindMeParking_BLOCKED_USERS WHERE blocked_user_number = %s;", user);
+            myresult = self.mycursor.fetchall()
+            return True if len(myresult) != 0 else False            
 
     #this function is called when a user is trying to log in #TRUNCATED BUT NOT YET DELETED
     def userLogin(self):
@@ -2687,6 +2708,7 @@ class FindMeParkingApp(Tk):
                     username = self.username
                     self.saveAccountInfo_toDB()
                     self.get_userNoFromDB()
+                    self.validate_User()
                     self.log_userNo(self.userNo)
                     self.confirmRegistration()                    
                 else:
@@ -2732,6 +2754,20 @@ class FindMeParkingApp(Tk):
                 (user_username, user_password, user_gender, user_fname, user_lname, user_email, user_tele, user_id, user_cardNo, user_cvv, user_exp_month, user_exp_year) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"    
             val = (self.username,self.password,self.gender,self.fname.capitalize(),self.lname.capitalize(),
                 self.email,self.phone,self.id, self.card,self.cvv,self.exp_month,self.exp_year)
+            self.mycursor.execute(sql, val)
+            self.mydb.commit()
+        else:
+            print("ERROR CONNECTING TO DATABASE")
+        self.disconnect_from_database()
+        self.connect_to_database()        
+        
+    def validate_User(self):
+        if not self.connected_to_deatabase:
+            self.connect_to_database()
+        if self.connected_to_deatabase:
+            sql = f"INSERT INTO {self.database}_VALID_USERS \
+                (valid_user_number, valid_user_email, valid_user_id) VALUES (%s, %s, %s);"    
+            val = (self.userNo,self.email,self.id)
             self.mycursor.execute(sql, val)
             self.mydb.commit()
         else:

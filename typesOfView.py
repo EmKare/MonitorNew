@@ -56,7 +56,7 @@ class viewFeed(Tk):
 class SingleView(Frame):
     def __init__(self, parent, master, feeds,):
         Frame.__init__(self, parent)
-        main_colour = "lightblue"
+        main_colour = "light grey"
         self.config(bg = main_colour) 
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
@@ -97,7 +97,7 @@ class SingleView(Frame):
 class DoubleView(Frame):
     def __init__(self, parent, master, feeds, ):
         Frame.__init__(self, parent)
-        main_colour = "lightblue"
+        main_colour = "light grey"
         self.config(bg = main_colour)
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
@@ -215,7 +215,7 @@ class DoubleView(Frame):
 class QuadView(Frame):
     def __init__(self, parent, master, feeds,):
         Frame.__init__(self, parent,)
-        main_colour = "lightblue"
+        main_colour = "light grey"
         self.config(bg = main_colour)
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)

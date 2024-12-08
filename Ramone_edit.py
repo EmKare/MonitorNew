@@ -1,22 +1,43 @@
-from tkinter import Tk, Label, Button, Toplevel, font, LabelFrame, Canvas,\
-    PhotoImage, Frame, mainloop, NW, Entry, END, BOTH, messagebox, Scrollbar
-from parkingLots_newWith_list import _parkingLots
+from tkinter import Tk, Label, Button, Toplevel, font, LabelFrame, Canvas, PhotoImage, Frame, mainloop, NW, Entry, END, \
+    messagebox
 from tkintermapview import TkinterMapView
 from geopy.geocoders import Nominatim
 from urllib.request import urlopen
-from time import strftime, sleep
 from tkinter.ttk import Combobox
 from tkinter import ttk as ttk
 from PIL import ImageTk, Image
 from utils import rescaleFrame
-from geopy import distance
+from geopy import distance 
+from time import strftime
 import threading as th
-import mysql.connector
 import files as files
 import pickle as pkl
 import cvzone as cz
 import numpy as np
 import cv2 as cv
+
+#Ramone's Addition
+import mysql.connector
+import tkinter as tk
+from tkinter import ttk
+
+#Ramone's Addition
+"""
+def connect_to_database(self):
+    self.mydb = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="1234",
+        database=self.database
+    )
+    self.mycursor = self.mydb.cursor()
+    self.connected_to_deatabase = True
+
+
+def disconnect_from_database(self):
+    self.mydb.close()
+    self.connected_to_deatabase = False
+"""
 
 #Main window
 class App(Tk):
@@ -34,6 +55,7 @@ class App(Tk):
         self.wm_iconphoto(False, photo)
         #-- getting streams --
         self.vids = files.sources
+        
         # database stuff
         self.database = "FindMeParking"
         self.connected_to_deatabase = False
@@ -44,7 +66,7 @@ class App(Tk):
         self.sidemenuFrame.place(x = 0, y = 0, )
         #Title Window -----------------------------------------------------------------------------------------------------------
         #frame for title
-        title_colour = "light grey"
+        title_colour = "green"
         self.titleFrame = Frame(self, bg=title_colour, highlightthickness = 0, bd = 2, width = self.__window_bredth - self.sidemenuFrame.winfo_reqwidth(), height = 90,)
         self.titleFrame.place(x = self.sidemenuFrame.winfo_reqwidth(), y = 0, )
         #Container for Main Frame -------------------------------------------------------------------------------------------------
@@ -79,19 +101,18 @@ class App(Tk):
         self.addFeedDataWindowButton = Button(self.sidemenuFrame, text = "Add Feeds", font = ('calibri', 18), fg = "black", bd= 1, command=lambda: self.show_frame(AddFeed))
         self.addFeedDataWindowButton.place(x = 0, y = 304, width = self.sidemenuFrame.winfo_reqwidth(), height = (self.sidemenuFrame.winfo_reqheight() / 5))
         
-        self.settingsWindowButton = Button(self.sidemenuFrame, text = "View Users", font = ('calibri', 18), fg = "black", bd= 1, command=lambda: self.show_frame(Settings),)# state = "disabled")
-        self.settingsWindowButton.place(x = 0, y = 456, width = self.sidemenuFrame.winfo_reqwidth(), height = (self.sidemenuFrame.winfo_reqheight() / 5))
-        
         self.viewMapWindowButton = Button(self.sidemenuFrame, text = "View Map", font = ('calibri', 18), fg = "black", bd= 1, command=lambda: self.show_frame(ViewMap))
-        self.viewMapWindowButton.place(x = 0, y = 608, width = self.sidemenuFrame.winfo_reqwidth(), height = (self.sidemenuFrame.winfo_reqheight() / 5))
+        self.viewMapWindowButton.place(x = 0, y = 456, width = self.sidemenuFrame.winfo_reqwidth(), height = (self.sidemenuFrame.winfo_reqheight() / 5))
         
+        self.settingsWindowButton = Button(self.sidemenuFrame, text = "Settings", font = ('calibri', 18), fg = "black", bd= 1, command=lambda: self.show_frame(Settings))
+        self.settingsWindowButton.place(x = 0, y = 608, width = self.sidemenuFrame.winfo_reqwidth(), height = (self.sidemenuFrame.winfo_reqheight() / 5))
         #Title Window -----------------------------------------------------------------------------------------------------------
         #Name of Parking Lot being monitored
         self.bigLabel = Label(self.titleFrame, text = 'Find Me Parking Surveillance Monitor', font = ('calibri', 35), bg=title_colour)
         self.bigLabel.place(x = (self.titleFrame.winfo_reqwidth() / 2) - int(self.bigLabel.winfo_reqwidth() / 2), 
                             y = (self.titleFrame.winfo_reqheight() / 2) - int(self.bigLabel.winfo_reqheight() / 2))
         #LogOut Button
-        self.logoutButton = Button(self.titleFrame, text = "Log Out", font = ('calibri', 18), fg = "red", bg = "white",)# command = lambda: self.closeApp())
+        self.logoutButton = Button(self.titleFrame, text = "Log Out", font = ('calibri', 18), fg = "red", bg = "white", command = lambda: self.closeApp())
         self.logoutButton.place(x = 0, y = 0,  width = 140, height = self.titleFrame.winfo_reqheight() - 2,)
         #Time label
         self.timeLabel = Label(self.titleFrame, font=('calibri', 20, 'bold'), bg=title_colour, fg='black')          
@@ -103,20 +124,6 @@ class App(Tk):
         self.getTime()      
         #starts tkinter
         mainloop()
-        
-    def connect_to_database(self):
-        self.mydb = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="1234",
-            database= self.database
-            )
-        self.mycursor = self.mydb.cursor()
-        self.connected_to_deatabase = True
-
-    def disconnect_from_database(self):
-        self.mydb.close()
-        self.connected_to_deatabase = False
         
     def set_timeBool(self, timeBool):
         self.timeBool = timeBool
@@ -152,11 +159,26 @@ class App(Tk):
         self.set_timeBool(False)
         self.destroy()
         Login()
+    
+    def connect_to_database(self):
+        self.mydb = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="1234",
+            database= self.database
+            )
+        self.mycursor = self.mydb.cursor()
+        self.connected_to_deatabase = True
+
+    def disconnect_from_database(self):
+        self.mydb.close()
+        self.connected_to_deatabase = False
+     
         
 class EditWindow(Frame):
     def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
-        self.config(bg="light grey")
+        self.config(bg="lightblue")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross = int(self.__window_bredth / 2)
 
@@ -194,19 +216,19 @@ class EditWindow(Frame):
         #------------------------------------------------------------------------------------------------------------------------
         
         #labelframe for combobox 
-        self.comboBoxLabelFrame = LabelFrame(self, text = "  Select Feed  ", font = ('bold', 12), pady = 20, width = 565, height = 140, bg="light grey")
+        self.comboBoxLabelFrame = LabelFrame(self, text = "  Select Feed  ", font = ('bold', 12), pady = 20, width = 565, height = 140)
         self.comboBoxLabelFrame.place(x = 25, y = 80)
         
         #labelframe for buttons
-        self.buttonsLabelFrame = LabelFrame(self, text = "  Options  ", font = ('bold', 12), pady = 10, width = 565, height = 140, bg="light grey")
+        self.buttonsLabelFrame = LabelFrame(self, text = "  Options  ", font = ('bold', 12), pady = 10, width = 565, height = 140)
         self.buttonsLabelFrame.place(x = self.__midpointAcross + 15, y = 80)
         
         #labelframe for video feed label
-        self.feedLabelFrame = LabelFrame(self, text = "  Video Feed  ", font = ('bold', 12), pady = 10, width = 565, height = 400, bg="light grey")
+        self.feedLabelFrame = LabelFrame(self, text = "  Video Feed  ", font = ('bold', 12), pady = 10, width = 565, height = 400)
         self.feedLabelFrame.place(x = 25, y = 240)
         
         #labelframe for edit footage panel label
-        self.editLabelFrame = LabelFrame(self, text = "  Edit Feed  ", font = ('bold', 12), pady = 10, width = 565, height = 400, bg="light grey" )
+        self.editLabelFrame = LabelFrame(self, text = "  Edit Feed  ", font = ('bold', 12), pady = 10, width = 565, height = 400, )
         self.editLabelFrame.place(x = self.__midpointAcross + 15, y = 240)
         #------------------------------------------------------------------------------------------------------------------------
         #---BUTTONS---
@@ -293,7 +315,7 @@ class EditWindow(Frame):
     
     def createEditCanvas(self):
         width, height = 555, 365
-        self.editCanvas = Canvas(self.editLabelFrame,  cursor="tcross", width = width, height = height, bg="light grey")
+        self.editCanvas = Canvas(self.editLabelFrame,  cursor="tcross", width = width, height = height,)
         self.editCanvas.create_text(int(width / 2), int(height / 2), text = "awaiting feed...", font = ('bold', 20), anchor = "center", tags = 'text')
         self.editCanvas.place(x = 0, y = 0)
         self.editCanvas.bind("<ButtonPress-1>", self.leftClick)
@@ -631,7 +653,7 @@ class AddFeed(Frame):
     def __init__(self, parent, master, sources = 0):
         Frame.__init__(self, parent)
         from editFeedOptions import addFeed, editFeed, deleteFeed
-        self.config(bg="light grey")
+        self.config(bg="grey")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
         
@@ -698,13 +720,12 @@ class ViewMap(Frame):
         Frame.__init__(self, parent)
         import openrouteservice as ors
         self.client = ors.Client(key='5b3ce3597851110001cf62480f6929fa14f1415b865522ca5d94fb50')
-        self.config(bg="light grey")
+        self.config(bg="lightblue")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
         self.entryDefaultText = "                          search"
         self.entryDefaultTextColour = "lightgray"
-        self.master = master
-        self.has_defaultText, self.right_click = False, False
+        self.has_defaultText = False
         self.hasRoute = False
         self.entry_width = 240
         self.searchFrame_width = 320
@@ -713,42 +734,20 @@ class ViewMap(Frame):
         self.distanceService = Nominatim(user_agent="geoapiExercises")
         self.__weight_constant = 0.0001
         self.locations = []
-        self.getLocations()
-        
         self.allLocations = []
-        self.getAllParkingLots()
-        
+        self.getLocations()
         self.setInOrder()
         #self.showLocations()
-        
-    def getAllParkingLots(self):
-        self.allLocations.clear()
-        if not self.master.connected_to_deatabase:
-            self.master.connect_to_database()
-        if self.master.connected_to_deatabase:    
-            self.master.mycursor.execute("SELECT * FROM ParkingLot_locations")
-            myresult = self.master.mycursor.fetchall()
-            for x in myresult:
-                self.allLocations.append(x)
-        self.master.disconnect_from_database()
-        self.master.connect_to_database
     
     #this function shows all the parking lots in Kingston
     def showLocations(self):
-        if not self.hidden:        
-            for x in self.allLocations:
-                try:
-                    self.map_widget.set_marker(x[2], x[3], text = x[1], text_color = "black")
-                except Exception:
-                    print(f"error @ {x}")
-            self.show_hide_button.config(text='HIDE PARKING LOTS', command = self.hideLocations)
-        self.hidden = True
-    
-    def hideLocations(self):
-        if self.hidden:
-            self.map_widget.delete_all_marker()
-            self.show_hide_button.config(text='SHOW PARKING LOTS', command = self.showLocations)
-        self.hidden = False  
+        from parkingLots import _parkingLots
+        
+        for x, y in _parkingLots.items():
+            try:
+                self.map_widget.set_marker(y[0], y[1], text = x, text_color = "black")
+            except Exception:
+                print(f"error @ {x} with {y}")
     
     #this function adds locations from across Jamaica, that the map can read, into a list
     def getLocations(self):
@@ -778,102 +777,6 @@ class ViewMap(Frame):
         #    self.map_widget.set_marker(location.latitude, location.longitude, text = location.address, text_color = "black")
         self.map_widget.set_zoom(9)
         self.clearRoute = Button(self.mapCanvas, text = "X", font = ('bold', 15), relief = "flat", bg = "#ffffff", activebackground = "#ffffff", bd= 0, highlightthickness = 0, border = 0)#, command = lambda : self.clearToEntry(), )
-        
-        self.map_widget.add_right_click_menu_command(label = "Save", pass_coords = True, command = self.right_click_event)
-        self.right_click = False
-        self.show_hide()
-        
-    def show_hide(self):
-        self.show_hide_canvas = Canvas(self.mapCanvas, bg = "light grey", bd = 0, highlightthickness = 0, border = 0)
-        self.show_hide_canvas.place(x = self.__window_bredth - 160, y = 10, width = 154, height = 52)
-        self.show_hide_label = Label(self.show_hide_canvas, text="show/hide all Parking Lots", font=('calibri',10), bg = "light grey")
-        self.show_hide_label.place(x = 1, y = 1, height= 24, width = 150)
-        self.show_hide_button = Button(self.show_hide_canvas, text = "SHOW PARKING LOTS", font = ('calibri',10), relief="flat", command = self.showLocations)
-        self.show_hide_button.place(x = 3, y = 25, width = 148, height = 24)
-        self.hidden = False
-        self.edit_locations_button = Button(self.show_hide_canvas, text = "EDIT PARKING LOTS", font = ('calibri',10), relief="flat", )#command = self.showLocations)
-        #self.edit_locations_button.place(x = 3, y = 27, width = 148, height = 24)
-        
-    
-    def right_click_event(self, coords):
-        if not self.right_click:
-            self.right_click = True
-            width, height = 154, 200
-            bg = "light grey"
-            self.save_coords_canvas = Canvas(self.mapCanvas, bg = "light grey", bd = 0, highlightthickness = 0, border = 0)
-            self.save_coords_canvas.place(x = self.__window_bredth - 160, y = 63, width = width, height = height)
-            
-            Button(self.save_coords_canvas, text = "x", font = ('calibri',13), relief="flat", command = self.close_save_coords_canvas).place(x = width - (20 + 1), y = 1, width = 20, height = 20)
-            self.save_coords_canvas.create_text(int(width/2) - 10, 15, text="Save Parking Location", font = ('calibri', 10), anchor = "center", tags = 'save_coords')
-            
-            self.save_coords_canvas.create_text(35, 45, text="Lat:", font = ('calibri', 10), anchor = "e", tags = 'save_coords')
-            Label(self.save_coords_canvas, text = f"{coords[0]:.12f}", font = ('calibri', 10), bg = bg, fg = "black").place(x = 35, y = 35)
-            
-            self.save_coords_canvas.create_text(35, 75, text="Long:", font = ('calibri', 10), anchor = "e", tags = 'save_coords')
-            Label(self.save_coords_canvas, text = f"{coords[1]:.12f}", font = ('calibri', 10), bg = bg, fg = "black").place(x = 35, y = 65)
-            
-            self.save_coords_name_label = Label(self.save_coords_canvas, text="Name:", font = ('calibri', 10), bg = bg, fg = "black")
-            self.save_coords_name_label.place(x = 0, y = 95)
-            self.save_coords_textbox = Entry(self.save_coords_canvas, bd = 0, bg = "#ffffff", highlightthickness = 0, border = 1, font=('calibri',10))
-            self.save_coords_textbox.place(x = 37, y = 95, width = width - (37 + 3), height = 22)
-            
-            self.save_coords_type_label = Label(self.save_coords_canvas, text="Type:", font = ('calibri', 10), bg = bg, fg = "black")
-            self.save_coords_type_label.place(x = 1, y = 125)
-            
-            self.save_coords_dropdown = Combobox(self.save_coords_canvas, values=[x for x in range(1,5)], state="readonly", font = ('calibri', 10))
-            self.save_coords_dropdown.config(font = "calibri 10 normal", ) 
-            self.save_coords_dropdown.place(x = 37, y = 125, width = width - (37 + 3), height = 22)
-            
-            Button(self.save_coords_canvas, text = "SAVE", font = ('calibri',13), relief="flat", command = lambda: self.log_save_coords_canvas(coords,bg,"black",width, height)).place(x = int(width/2) - 25, y = height - (30 + 5), width = 50, height = 30)
-            
-    def log_save_coords_canvas(self, coords:tuple, bg:str, fg:str, width:int, height:int):
-        self.save_coords_type_label.config(bg = bg, fg = fg, font = ('calibri', 10))
-        if len(self.save_coords_textbox.get()) != 0:
-            self.save_coords_name_label.config(bg = bg, fg = fg, font = ('calibri', 10))
-            self.save_coords_type_label.config(bg = bg, fg = fg, font = ('calibri', 10))
-            if not self.checkIfLotAlreadyInDatabase(self.save_coords_textbox.get()):
-                self.save_coords_name_label.config(bg = bg, fg = fg, font = ('calibri', 10))
-                self.save_coords_type_label.config(bg = bg, fg = fg, font = ('calibri', 10))
-                if (self.save_coords_dropdown.get()) != "":
-                    self.save_coords_name_label.config(bg = bg, fg = fg, font = ('calibri', 10))
-                    self.save_coords_type_label.config(bg = bg, fg = fg, font = ('calibri', 10))
-                    if not self.master.connected_to_deatabase:
-                        self.master.connect_to_database()
-                    if self.master.connected_to_deatabase:
-                        query = "INSERT INTO ParkingLot_locations (lot_title, lot_lat_coord, lot_long_coord, lot_type) VALUES (%s, %s, %s, %s)"
-                        self.master.mycursor.execute(query, (self.save_coords_textbox.get(), coords[0], coords[1], int(self.save_coords_dropdown.get()),))
-                        self.master.mydb.commit()                        
-                        self.getAllParkingLots()
-                    self.master.disconnect_from_database()
-                    self.master.connect_to_database()                    
-                    self.save_coords_canvas.after(1000)
-                    for widget in self.save_coords_canvas.winfo_children():
-                        widget.destroy()
-                    self.save_coords_canvas.delete('save_coords')
-                    self.save_coords_canvas.create_text(int(width/2), int(height/2)-13, text="Parking Location", font = ('calibri', 17), anchor = "center", tags = 'save_coords', fill="green3")
-                    self.save_coords_canvas.create_text(int(width/2), int(height/2)+13, text="Saved", font = ('calibri', 17), anchor = "center", tags = 'save_coords',fill = 'green3')
-                    self.save_coords_canvas.after(1000, self.close_save_coords_canvas)
-                else:
-                    self.save_coords_type_label.config(bg = "red", fg = "white", font = ('bold', 10))
-            else:
-                self.save_coords_name_label.config(bg = "red", fg = "white", font = ('bold', 10)) 
-        else:
-            self.save_coords_name_label.config(bg = "red", fg = "white", font = ('bold', 10))
-    
-    def checkIfLotAlreadyInDatabase(self, lot_title:str):
-        if not self.master.connected_to_deatabase:
-            self.master.connect_to_database()
-        if self.master.connected_to_deatabase:
-            query = f"SELECT * FROM ParkingLot_locations WHERE lot_title = %s;"
-            self.master.mycursor.execute(query, (lot_title,))
-            myresult = self.master.mycursor.fetchall()
-        self.master.disconnect_from_database()
-        self.master.connect_to_database()
-        return True if len(myresult) > 0 else False
-            
-    def close_save_coords_canvas(self):
-        self.right_click = False
-        self.save_coords_canvas.destroy()
     
     #this function creates the default widgets needed to navigate the map    
     def createSearch(self):
@@ -1089,34 +992,43 @@ class Settings(Frame):
         self.config(bg="lightblue")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
-        self.master = master
         
-        if not self.master.connected_to_deatabase:
-            self.master.connect_to_database()
-        if self.master.connected_to_deatabase:
-            self.master.mycursor.execute("SELECT * FROM FindMeParking_BLOCKED_USERS")
-            myresult = self.master.mycursor.fetchall()
-        #for x in myresult:
-        #    print(x)
-        
-        label = Label(self, text=myresult[0][1], fg="red")
+        label = Label(self, text="Settings", fg="white")
         label.place(x = (parent.winfo_reqwidth() / 2) - int(label.winfo_reqwidth() / 2), 
                     y = (parent.winfo_reqheight() / 2) - int(label.winfo_reqheight() / 2))
         label.place(x = 800, y = 200)
 """
+
+#Ramone's Addition -------------------------------------------------------------------
+# MySQL Database connection configuration
+#db_config = {
+#    "host": "localhost",
+#    "user": "root",
+#    "password": "1234",
+#    "database": "FindMeParking"
+#}
+
 class Settings(Frame):
     def __init__(self, parent, master, sources=0):
         Frame.__init__(self, parent)
-        self.config(bg="light grey")
+        self.config(bg="lightblue")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
         self.master = master
         label = Label(self, text="Settings", fg="white", bg="lightblue")
         label.place(x=800, y=50)
-#Ramone's Addition START -------------------------------------------------------------------
+
+        # MySQL configuration
+        self.db_config = {
+            "host": "localhost",
+            "user": "root",
+            "password": "1234",
+            "database": "FindMeParking"
+        }
+
         # Initialize user data and dropdowns
         self.user_data = self.fetch_user_data()
-        self.statuses = ["Active", "Blocked"]#["Active", "Inactive", "Blocked"]
+        self.statuses = ["Active", "Inactive", "Blocked"]
         self.dropdowns = []
 
         # Create the table and save button
@@ -1125,86 +1037,36 @@ class Settings(Frame):
 
     def fetch_user_data(self):
         """Fetch user data from the database."""
-        if not self.master.connected_to_deatabase:
-            self.master.connect_to_database()
-        if self.master.connected_to_deatabase:
-            query = f"SELECT user_number, user_username, user_fname, user_lname, user_email, user_id, user_status FROM {self.master.database}_users;"
-            self.master.mycursor.execute(query)
-            data = self.master.mycursor.fetchall()
-        self.master.disconnect_from_database()
-        self.master.connect_to_database()
+        #connection = mysql.connector.connect(**self.db_config)
+        #cursor = connection.cursor(dictionary=True)
+        query = "SELECT user_number, user_username, user_fname, user_lname, user_email, user_status FROM findmeparking_users;"
+        self.master.mycursor.execute(query)
+        data = self.master.mycursor.fetchall()
+        #cursor.close()
+        #connection.close()
         return data
 
     def update_user_statuses(self, updated_statuses):
         """Update user statuses in the database."""
-        if not self.master.connected_to_deatabase:
-            self.master.connect_to_database()
-        if self.master.connected_to_deatabase:
-            for user_number, user_data in updated_statuses.items():
-                query = f"UPDATE {self.master.database}_users SET user_status = %s WHERE user_number = %s;"
-                self.master.mycursor.execute(query, (user_data[2], user_number))
-                self.master.mydb.commit()
-                if user_data[2] == "Active":                    
-                    self.checkIfUserInActive_ElseActivate(user_number,user_data)
-                if user_data[2] == "Blocked":                    
-                    self.checkIfUserInBlocked_ElseBlock(user_number,user_data)
-        self.master.disconnect_from_database()
-        self.master.connect_to_database()
-    
-    #KAREEM FUNCTION 1
-    def checkIfUserInBlocked_ElseBlock(self, user_number, user_data):
-        if not self.master.connected_to_deatabase:
-            self.master.connect_to_database()
-        if self.master.connected_to_deatabase:
-            query = f"SELECT * FROM {self.master.database}_BLOCKED_USERS WHERE blocked_user_number = %s;"
-            self.master.mycursor.execute(query, (user_number,))
-            myresult = self.master.mycursor.fetchall()
-            if len(myresult) < 1:  #user_number: [email, id_number, dropdown.get()]
-                query = f"INSERT INTO {self.master.database}_BLOCKED_USERS (blocked_user_number, blocked_user_email, blocked_user_id) VALUES (%s, %s, %s)"
-                self.master.mycursor.execute(query, (user_number, user_data[0], user_data[1],))
-                self.master.mydb.commit()
-            query = f"SELECT * FROM {self.master.database}_VALID_USERS WHERE valid_user_number = %s;"
-            self.master.mycursor.execute(query, (user_number,))
-            myresult = self.master.mycursor.fetchall()
-            if len(myresult) > 0:
-                query = f"DELETE FROM {self.master.database}_VALID_USERS WHERE valid_user_number = %s"
-                self.master.mycursor.execute(query, (user_number,))
-                self.master.mydb.commit()
-        self.master.disconnect_from_database()
-        self.master.connect_to_database()
-        
-    #KAREEM FUNCTION 2
-    def checkIfUserInActive_ElseActivate(self, user_number, user_data):
-        if not self.master.connected_to_deatabase:
-            self.master.connect_to_database()
-        if self.master.connected_to_deatabase:
-            query = f"SELECT * FROM {self.master.database}_VALID_USERS WHERE valid_user_number = %s;"
-            self.master.mycursor.execute(query, (user_number,))
-            myresult = self.master.mycursor.fetchall()
-            if len(myresult) < 1:  #user_number: [email, id_number, dropdown.get()]
-                query = f"INSERT INTO {self.master.database}_VALID_USERS (valid_user_number, valid_user_email, valid_user_id) VALUES (%s, %s, %s)"
-                self.master.mycursor.execute(query, (user_number, user_data[0], user_data[1],))
-                self.master.mydb.commit()
-            query = f"SELECT * FROM {self.master.database}_BLOCKED_USERS WHERE blocked_user_number = %s;"
-            self.master.mycursor.execute(query, (user_number,))
-            myresult = self.master.mycursor.fetchall()
-            if len(myresult) > 0:
-                query = f"DELETE FROM {self.master.database}_BLOCKED_USERS WHERE blocked_user_number = %s"
-                self.master.mycursor.execute(query, (user_number,))
-                self.master.mydb.commit()
-        self.master.disconnect_from_database()
-        self.master.connect_to_database()
+        #connection = mysql.connector.connect(**self.db_config)
+        #cursor = connection.cursor()
+        for user_number, status in updated_statuses.items():
+            query = "UPDATE findmeparking_users SET user_status = %s WHERE user_number = %s;"
+            self.master.mycursor.execute(query, (status, user_number))
+            self.master.mydb.commit()
+        #cursor.close()
+        #connection.close()
 
     def create_table(self):
         """Create a table with user information and dropdowns."""
         # Frame for the table
         table_frame = Frame(self)
-        table_frame.pack(fill=BOTH, expand=True, padx=20, pady=20)
+        table_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
         # Create a Canvas to allow scrolling
         canvas = Canvas(table_frame)
-        scrollbar = Scrollbar(table_frame, orient="vertical", command=canvas.yview)
-        scrollable_frame = Frame(canvas)
+        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
 
         scrollable_frame.bind(
             "<Configure>",
@@ -1218,37 +1080,36 @@ class Settings(Frame):
         scrollbar.pack(side="right", fill="y")
 
         # Add table headers
-        headers = ["User Number", "Username", "First Name", "Last Name", "Email", "ID Number", "Status"]
+        headers = ["User Number", "Username", "First Name", "Last Name", "Email", "Status"]
         for col_index, header in enumerate(headers):
-            header_label = Label(scrollable_frame, text=header, bg="lightblue", font=("Arial", 10, "bold"), relief="ridge", width=19)
-            header_label.grid(row=0, column=col_index, sticky="nsew", padx=2, pady=1)
+            header_label = tk.Label(scrollable_frame, text=header, bg="lightblue", font=("Arial", 10, "bold"), relief="ridge", width=20)
+            header_label.grid(row=0, column=col_index, sticky="nsew", padx=1, pady=1)
 
         # Insert user data and dropdowns
         for row_index, user in enumerate(self.user_data, start=1):
             # Insert user data 
             #user_number, user_username, user_fname, user_lname, user_status
-            Label(scrollable_frame, text=user[0], relief="ridge", width=20).grid(row=row_index, column=0, padx=2, pady=1)
-            Label(scrollable_frame, text=user[1], relief="ridge", width=20).grid(row=row_index, column=1, padx=2, pady=1)
-            Label(scrollable_frame, text=user[2], relief="ridge", width=20).grid(row=row_index, column=2, padx=2, pady=1)
-            Label(scrollable_frame, text=user[3], relief="ridge", width=20).grid(row=row_index, column=3, padx=2, pady=1)
-            Label(scrollable_frame, text=user[4], relief="ridge", width=20).grid(row=row_index, column=4, padx=2, pady=1)
-            Label(scrollable_frame, text=user[5], relief="ridge", width=20).grid(row=row_index, column=5, padx=2, pady=1)
+            tk.Label(scrollable_frame, text=user[0], relief="ridge", width=20).grid(row=row_index, column=0, padx=1, pady=1)
+            tk.Label(scrollable_frame, text=user[1], relief="ridge", width=20).grid(row=row_index, column=1, padx=1, pady=1)
+            tk.Label(scrollable_frame, text=user[2], relief="ridge", width=20).grid(row=row_index, column=2, padx=1, pady=1)
+            tk.Label(scrollable_frame, text=user[3], relief="ridge", width=20).grid(row=row_index, column=3, padx=1, pady=1)
+            tk.Label(scrollable_frame, text=user[4], relief="ridge", width=20).grid(row=row_index, column=4, padx=1, pady=1)
 
             # Add dropdown for status
-            dropdown = Combobox(scrollable_frame, values=self.statuses, state="readonly", width=15)
-            dropdown.set(user[6])  # Set default status
-            dropdown.grid(row=row_index, column=6, padx=2, pady=1)
-            self.dropdowns.append((user[0], user[4], user[5], dropdown))  # Store dropdowns  
+            dropdown = ttk.Combobox(scrollable_frame, values=self.statuses, state="readonly", width=18)
+            dropdown.set(user[5])  # Set default status
+            dropdown.grid(row=row_index, column=5, padx=1, pady=1)
+            self.dropdowns.append((user[0], dropdown))  # Store dropdowns
 
     def create_save_button(self):
         """Create a Save button to update statuses."""
-        save_button = Button(self, text="Save Data", command=self.save_statuses, bg="green", fg="white")
+        save_button = tk.Button(self, text="Save Statuses", command=self.save_statuses, bg="green", fg="white")
         save_button.pack(pady=10)
 
     def save_statuses(self):
         """Prompt to confirm and save updated statuses."""
         # Collect updated statuses
-        updated_statuses = {user_number: [email, id_number, dropdown.get()] for user_number, email, id_number, dropdown in self.dropdowns}
+        updated_statuses = {user_number: dropdown.get() for user_number, dropdown in self.dropdowns}
 
         # Prompt for confirmation
         confirm = messagebox.askyesno("Confirm Changes", "Do you want to save the changes to user statuses?")
@@ -1257,9 +1118,9 @@ class Settings(Frame):
             messagebox.showinfo("Success", "User statuses updated successfully!")
         else:
             messagebox.showinfo("Cancelled", "Changes were not saved.")
-#Ramone's Addition END -------------------------------------------------------------------
 
-App("Administrator")
+
+App("Kareem")
 
 """
 Boeing, G. (2024). Modeling and Analyzing Urban Networks and Amenities with OSMnx. Working paper.

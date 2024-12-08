@@ -6,7 +6,7 @@ import files
 class feedEditor(Tk):
     def __init__(self,*args,**kwargs):
         Tk.__init__(self,*args,**kwargs)
-        self.config(bg="grey")
+        self.config(bg="light grey")
         self.__window_bredth, self.__window_length = 1200, 670
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
         self.geometry(f"{self.__window_bredth}x{self.__window_length}+100+50")        
@@ -19,7 +19,7 @@ class feedEditor(Tk):
         self.containerFrame.place(x = 0, y = self.tabs.winfo_reqheight(), width = self.__window_bredth, height = self.__window_length - self.tabs.winfo_reqheight(),)
         
         #frame for main window
-        mainFrame = Frame(self.containerFrame, highlightthickness = 0, bd = 0, relief = "flat", width = self.__window_bredth, height = self.__window_length - self.tabs.winfo_reqheight(), bg="lightblue")
+        mainFrame = Frame(self.containerFrame, highlightthickness = 0, bd = 0, relief = "flat", width = self.__window_bredth, height = self.__window_length - self.tabs.winfo_reqheight(), bg="light grey")
         mainFrame.pack(side="top", fill="both", expand=True)
         mainFrame.grid_rowconfigure(0, weight=1)
         mainFrame.grid_columnconfigure(0, weight=1)
@@ -66,7 +66,7 @@ class feedEditor(Tk):
 class addFeed(Frame):
     def __init__(self, parent, master, sources = None,):
         Frame.__init__(self, parent)
-        parent_colour = "lightblue"
+        parent_colour = "light grey"
         self.config(bg=parent_colour)
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
@@ -290,7 +290,7 @@ class addFeed(Frame):
 class editFeed(Frame):
     def __init__(self, parent, master, sources = None,):
         Frame.__init__(self, parent)        
-        parent_colour = "lightblue"
+        parent_colour = "light grey"
         self.config(bg=parent_colour)
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
@@ -510,7 +510,7 @@ class editFeed(Frame):
 class deleteFeed(Frame):
     def __init__(self, parent, master, sources = None, ):
         Frame.__init__(self, parent)
-        self.config(bg="lightblue")
+        self.config(bg="light grey")
         self.__window_bredth, self.__window_length = parent.winfo_reqwidth(), parent.winfo_reqheight()
         self.__midpointAcross, self.__midpointDown = int(self.__window_bredth / 2), int(self.__window_length / 2)
         
