@@ -4512,7 +4512,7 @@ class Browser:
     def create_webview_window(self, width:int, height:int):
         if self.webview_window is None:
             #width, height = 400, 750 #original sizes
-            self.webview_window = web.create_window(title=f'from YOU to {self.title}', width=width, height=height, x=300, y=0, on_top=True, resizable=False, min_size=(width,height),)
+            self.webview_window = web.create_window(title=f'from YOU to {self.title}', width=width+15, height=height, x=300, y=0, on_top=True, resizable=False, min_size=(width,height),)
             
     # Function to open webview on the main thread
     def open_webview(self, url:str, width:int, height:int):
