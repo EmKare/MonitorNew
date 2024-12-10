@@ -1,8 +1,10 @@
 from tkinter import Tk, Label, Button, Toplevel, font, LabelFrame, Canvas,\
     PhotoImage, Frame, mainloop, NW, Entry, END, BOTH, messagebox, Scrollbar
+from checkDatabase import create_database_if_not_exists
 from parkingLots_newWith_list import _parkingLots
 from tkintermapview import TkinterMapView
 from geopy.geocoders import Nominatim
+from installPackages import packages
 from urllib.request import urlopen
 from time import strftime, sleep
 from tkinter.ttk import Combobox
@@ -17,6 +19,30 @@ import pickle as pkl
 import cvzone as cz
 import numpy as np
 import cv2 as cv
+
+def get_packages_status():
+    try:
+        with open(f"{files.user_profile}packages_installed.txt","r") as file:                
+            return True if int(file.read()) == 1 else False
+    except Exception:
+        return False
+
+def set_packages_status(installed:int = 1):    
+    f = open(files.user_profile+"packages_installed.txt", "w")
+    f.write(f"{installed}")
+    f.close()
+
+def get_database_status():
+    try:
+        with open(f"{files.user_profile}database_exists.txt","r") as file:                
+            return True if int(file.read()) == 1 else False
+    except Exception:
+        return False
+
+def set_database_status(exists:int = 1):    
+    f = open(files.user_profile+"database_exists.txt", "w")
+    f.write(f"{exists}")
+    f.close()
 
 #Main window
 class App(Tk):
@@ -144,14 +170,14 @@ class App(Tk):
         button.pack()
         
     def closeApp(self):
-        from Login import Login
+        #from Login import Login
         try:
             EditWindow.closeAll()
         except Exception:
             pass
         self.set_timeBool(False)
         self.destroy()
-        Login()
+        #Login()
         
 class EditWindow(Frame):
     def __init__(self, parent, master, sources = 0):
@@ -760,7 +786,7 @@ class ViewMap(Frame):
     
     #this function is called to create a canvas to display the map on
     def setInOrder(self, location = None):
-        self.mapCanvas = Canvas(self, bg = "red")
+        self.mapCanvas = Canvas(self,)
         self.mapCanvas.place(x = 1, y = 1, width = self.__window_bredth - 2, height = self.__window_length - 2,)
         self.createMap(location)
         self.createSearch()
@@ -1259,7 +1285,30 @@ class Settings(Frame):
             messagebox.showinfo("Cancelled", "Changes were not saved.")
 #Ramone's Addition END -------------------------------------------------------------------
 
-App("Administrator")
+
+if __name__ == "__main__":
+    if not get_packages_status():
+        try: 
+            packages()
+            set_packages_status()
+        except Exception: print("------------------PACKAGES EXCEPTION------------------------\n \
+                                This application may not run properly, as an error was found \n \
+                                when trying to download the necessary packages. To avoid \n \
+                                unnecessary errors, please check to ensure all packages are \n \
+                                properly installed BEFORE fully accessing this application.\n")
+    
+    if not get_database_status():
+        try: 
+            create_database_if_not_exists()
+            set_database_status()
+        except Exception: print("------------------DATABASE EXCEPTION------------------------\n \
+                                This application may not run properly as an error was found\n \
+                                when trying to access the database. To avoid unnecessary errors,\n \
+                                please check to ensure all database connection credentials are\n \
+                                correct BEFORE opening this application.")
+    
+    App("Administrator")    
+    
 
 """
 Boeing, G. (2024). Modeling and Analyzing Urban Networks and Amenities with OSMnx. Working paper.

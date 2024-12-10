@@ -1,2 +1,3 @@
-l = "Parking for Scotia Investments & Bank Of Jamaica "
-print(len(l))
+from installPackages import packages
+
+packages()

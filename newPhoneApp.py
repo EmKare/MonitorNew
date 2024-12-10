@@ -1,10 +1,12 @@
 from tkinter import Tk, ttk, Button, LabelFrame, Canvas, Label, Checkbutton, BooleanVar, \
     Scrollbar, Frame,  Listbox, END, Text, CENTER, messagebox,\
         Entry, ARC, font, RIGHT, LEFT, BOTH, Y, NW, INSERT
+from checkDatabase import create_database_if_not_exists
 from parkingLots_newWith_list import _parkingLots
 from getParkingLot_NEW import ParkingLotInfo
 from tkintermapview import TkinterMapView
 from geopy.geocoders import Nominatim
+from installPackages import packages
 from random import choice, randint
 from tkinter.ttk import Combobox
 from time import strftime, time
@@ -20,6 +22,30 @@ from os import listdir
 import webview as web
 import win32api
 import re
+
+def get_packages_status():
+    try:
+        with open(f"{files.user_profile}packages_installed.txt","r") as file:                
+            return True if int(file.read()) == 1 else False
+    except Exception:
+        return False
+
+def set_packages_status(installed:int = 1):    
+    f = open(files.user_profile+"packages_installed.txt", "w")
+    f.write(f"{installed}")
+    f.close()
+
+def get_database_status():
+    try:
+        with open(f"{files.user_profile}database_exists.txt","r") as file:                
+            return True if int(file.read()) == 1 else False
+    except Exception:
+        return False
+
+def set_database_status(exists:int = 1):    
+    f = open(files.user_profile+"database_exists.txt", "w")
+    f.write(f"{exists}")
+    f.close()
 
 class FindMeParkingApp(Tk):
     #class contructor
@@ -102,7 +128,6 @@ class FindMeParkingApp(Tk):
         self.get_previousbookingsFromDB()
         self.mySpot = None
         self.termsAgreed = bool(self.checkTerms())
-        self.bankBalance = 10 #MIGHT NEED A SETTER n GETTER
         self.available_lots = {}
         self.more_available_lots = {}
         self.COUNT = 1
@@ -165,6 +190,17 @@ class FindMeParkingApp(Tk):
         
     def set_bankBalance(self, bankBalance:int):
         self.bankBalance = bankBalance
+        self.log_userBalance(bankBalance)
+    
+    def log_userBalance(self, bankBalance:int):
+        if not self.connected_to_deatabase:
+            self.connect_to_database()
+        if self.connected_to_deatabase:
+            sql = f"UPDATE FindMeParking_USERS SET user_balance = %s WHERE user_number = %s;"
+            self.mycursor.execute(sql, (bankBalance,self.userNo,))
+            self.mydb.commit()
+        self.disconnect_from_database()
+        self.connect_to_database()
 
     def run_app(self):
         #self.lift()
@@ -192,22 +228,26 @@ class FindMeParkingApp(Tk):
             self.userMetTerms()
     
     def get_UserCredentials(self, user:tuple):
-        self.mycursor.execute("SELECT * FROM FindMeParking_USERS WHERE user_number = %s;", user)
-        myresult = self.mycursor.fetchall()
-        for line in myresult:
-            self.username = line[1].strip()
-            self.password = line[2].strip()
-            self.gender = line[3].strip()
-            self.fname = line[4].strip()
-            self.lname = line[5].strip()
-            self.email = line[6].strip()
-            self.phone = int(line[7])
-            self.id = line[8].strip()
-            self.card = int(line[9])
-            self.cvv = line[10].strip()
-            self.exp_month = line[11].strip()
-            self.exp_year = line[12].strip()
-        self.userExists = True
+        if not self.connected_to_deatabase:
+            self.connect_to_database()
+        if self.connected_to_deatabase:
+            self.mycursor.execute("SELECT * FROM FindMeParking_USERS WHERE user_number = %s;", user)
+            myresult = self.mycursor.fetchall()
+            for line in myresult:
+                self.username = line[1].strip()
+                self.password = line[2].strip()
+                self.gender = line[3].strip()
+                self.fname = line[4].strip()
+                self.lname = line[5].strip()
+                self.email = line[6].strip()
+                self.phone = int(line[7])
+                self.id = line[8].strip()
+                self.card = int(line[9])
+                self.cvv = line[10].strip()
+                self.exp_month = line[11].strip()
+                self.exp_year = line[12].strip()
+                self.bankBalance = float(line[14])
+            self.userExists = True
         self.disconnect_from_database()
         self.connect_to_database()
 
@@ -336,6 +376,7 @@ class FindMeParkingApp(Tk):
             regex = r'^\s*(?=.*[1-9])\d*(?:\.\d{1,2})?\s*$'
             if(re.fullmatch(regex,self.amnt_entry.get())):
                 self.bankBalance += float(self.amnt_entry.get())
+                self.set_bankBalance(self.bankBalance)
                 self.userAccountCanvas.after(2000)
                 
                 mail = Bank_Topup(datetime.now(), self.fname, self.email, float(self.amnt_entry.get()), self.bankBalance, True)
@@ -822,6 +863,7 @@ class FindMeParkingApp(Tk):
 
     def backToMainScreen(self):
         self.clearMapMarkings()
+        self.bsck()
         try:
             self.map_container.destroy()
         except Exception:
@@ -835,7 +877,7 @@ class FindMeParkingApp(Tk):
         except Exception:
             pass
         try:
-            self.resultsCanvas.destroy()
+            self.self.userAccountCanvas.destroy()
         except Exception:
             pass
         try:
@@ -1339,13 +1381,13 @@ class FindMeParkingApp(Tk):
         self.create_rectangle(self.mainCanvas,2,2, 382, 731, fill='snow', alpha=.6, tags = "blur")
         self.mini_mainCanvas()
             
-        lbl = Label(master = self.userAccountCanvas, text = f"You've selected:", font = ('bold',18), bg = "gray79", wraplength = 300)
+        lbl = Label(self.userAccountCanvas, text = f"You've selected:", font = ('bold',18), bg = "gray79", wraplength = 300)
         lbl.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(lbl.winfo_reqwidth() / 2), y = 10)
         
-        lbl1 = Label(master = self.userAccountCanvas, text = f"{name}", font = ('bold',18), bg = "gray79", fg = "green", wraplength = 300)
+        lbl1 = Label(self.userAccountCanvas, text = f"{name}", font = ('bold',18), bg = "gray79", fg = "green", wraplength = 300)
         lbl1.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(lbl1.winfo_reqwidth() / 2), y = 50,)
         
-        lbl2 = Label(master = self.userAccountCanvas, text = "Proceed?", font = ('bold',20), bg = "gray79", wraplength = 300)
+        lbl2 = Label(self.userAccountCanvas, text = "Proceed?", font = ('bold',20), bg = "gray79", wraplength = 300)
         lbl2.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) - int(lbl2.winfo_reqwidth() / 2), y = 170)
         
         btn1 = Button(self.userAccountCanvas, text = "PROCEED", font = ('bold', 13), relief = "groove", )
@@ -1470,7 +1512,6 @@ class FindMeParkingApp(Tk):
         btn2.place(x = int(self.userAccountCanvas.winfo_reqwidth() / 2) + 5, y = 235, width= int(self.userAccountCanvas.winfo_reqwidth() / 2) - 20)
         
     def check_payment(self, amount:float, res_type:int, url:str, name:str, parkingLot:ParkingLotInfo, distance:float,):
-        #self.set_bankBalance(50)
         balance_left = float(self.bankBalance) - float(amount)
         
         #creates a Booking object
@@ -1483,7 +1524,7 @@ class FindMeParkingApp(Tk):
         
         if balance_left >= 0:
             self.currentBooking.set_time(datetime.now())
-            self.bankBalance = balance_left            
+            self.set_bankBalance(balance_left)
             self.currentBooking.set_outcome(True)
             
             mail = Bank_Statement(datetime.now(), self.fname, self.email, self.bankBalance,)
@@ -3755,7 +3796,6 @@ class FindMeParkingApp(Tk):
         if self.mySpot is None:
             self.mySpot = choice(self.activeLot.ParkingLot_availableSpots)
         self.currentBooking.set_spot(self.mySpot[0])
-        print(f"mySpot: {self.mySpot}")
         self.document_booking(self.currentBooking)
         self.previousbookings_List.append(self.currentBooking) 
         #self.mainCanvas.destroy()
@@ -4581,7 +4621,27 @@ class Booking:
     def get_outcome_string(booking,):
         return "Successful" if booking.__outcome else "Failed"
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
+    if not get_packages_status():
+        try: 
+            packages()
+            set_packages_status()
+        except Exception: print("------------------PACKAGES EXCEPTION------------------------\n \
+                                This application may not run properly, as an error was found \n \
+                                when trying to download the necessary packages. To avoid \n \
+                                unnecessary errors, please check to ensure all packages are \n \
+                                properly installed BEFORE fully accessing this application.\n")
+        
+    if not get_database_status():
+        try: 
+            create_database_if_not_exists()
+            set_database_status()
+        except Exception: print("------------------DATABASE EXCEPTION------------------------\n \
+                                This application may not run properly as an error was found\n \
+                                when trying to access the database. To avoid unnecessary errors,\n \
+                                please check to ensure all database connection credentials are\n \
+                                correct BEFORE opening this application.")
+        
     a = web.create_window(title="CLOSE TO OPEN APP", width=300, height=10, resizable=False, focus=False)
     web.start()
     a = None
